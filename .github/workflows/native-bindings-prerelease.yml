@@ -65,8 +65,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 55
     steps:
-      # actions/checkout v4.1.7, pinned by immutable commit SHA.
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      # actions/checkout v5, pinned by immutable commit SHA.
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
       # dtolnay/rust-toolchain, pinned by immutable commit SHA.
       - uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772
         with:
@@ -86,7 +86,7 @@ jobs:
           LIBFCP_NATIVE_BINDING_PACKAGE_DIR="$GITHUB_WORKSPACE/dist/native-bindings" \
             ./scripts/package_native_binding_bundle.sh
       # actions/upload-artifact v4.6.2, pinned by immutable commit SHA.
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
         with:
           name: libfcp-native-bindings-linux-x86_64
           path: dist/native-bindings

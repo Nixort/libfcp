@@ -53,8 +53,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     steps:
-      # actions/checkout v4.1.7, pinned by immutable commit SHA.
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      # actions/checkout v5, pinned by immutable commit SHA.
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
       # actions/setup-java v4, pinned by immutable commit SHA.
       - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3
         with:
@@ -79,7 +79,7 @@ jobs:
           LIBFCP_JVM_PACKAGE_DIR="$GITHUB_WORKSPACE/dist/jvm-maven" \
             ./scripts/package_jvm_bindings.sh
       # actions/upload-artifact v4.6.2, pinned by immutable commit SHA.
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
         with:
           name: libfcp-jvm-maven-linux-x86_64
           path: dist/jvm-maven/maven-repository
