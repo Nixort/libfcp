@@ -49,7 +49,8 @@ require() {
 [[ -f "$NATIVE_WORKFLOW" ]] || fail 'missing native binding workflow'
 [[ ! -e "$ROOT/docs/releases" ]] || fail 'legacy docs/releases directory remains'
 
-require 'No Java, Kotlin, Swift, Python, JavaScript, C#, Go or C package is publicly published' "$BINDINGS"
+require 'The Node/browser-bundler package **`@nixort/libfcp@1.0.0-rc.1` is published to GitHub Packages**' "$BINDINGS"
+require 'No remote Maven artifact, wheel, npmjs package, NuGet package, Go module release or platform binary is published' "$BINDINGS"
 require 'Proposed `libfcp-ffi`' "$BINDINGS"
 require 'Kotlin/JVM' "$BINDINGS"
 require 'Kotlin/Android' "$BINDINGS"
