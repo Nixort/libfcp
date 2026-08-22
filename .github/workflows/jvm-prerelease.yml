@@ -79,7 +79,7 @@ jobs:
           LIBFCP_JVM_PACKAGE_DIR="$GITHUB_WORKSPACE/dist/jvm-maven" \
             ./scripts/package_jvm_bindings.sh
       # actions/upload-artifact v4.6.2, pinned by immutable commit SHA.
-      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: libfcp-jvm-maven-linux-x86_64
           path: dist/jvm-maven/maven-repository
