@@ -24,8 +24,8 @@ path = "src/main.rs"
 
 [dependencies]
 clap.workspace = true
-fcp-fabric-domain = { path = "../fcp-fabric-domain" }
-fcp-fabric-store = { path = "../fcp-fabric-store" }
+fcp-fabric-domain = { version = "=1.0.0-rc.1", path = "../fcp-fabric-domain" }
+fcp-fabric-store = { version = "=1.0.0-rc.1", path = "../fcp-fabric-store" }
 rpassword.workspace = true
 serde.workspace = true
 serde_json.workspace = true

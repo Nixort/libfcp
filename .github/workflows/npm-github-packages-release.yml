@@ -5,15 +5,21 @@
 #
 # Federated CFR Connect Protocol (FCP).
 #
-# Prerequisite: configure the protected `github-packages-release` environment
-# with required review. This workflow is triggered only after a maintainer
-# publishes a GitHub prerelease whose v-prefixed tag matches package.json.
-
+# A prerelease may be published after either a matching GitHub prerelease event
+# or an explicit reviewed `workflow_dispatch` from main. The latter permits an
+# RC package publication without manufacturing a Git tag or GitHub Release.
 name: libfcp npm GitHub Packages release
-
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: "Confirm publication of the validated prerelease to GitHub Packages"
+        required: true
+        type: boolean
+        default: false
+
 
 permissions:
   contents: read
@@ -28,7 +34,9 @@ concurrency:
 jobs:
   publish:
     name: Publish reviewed npm prerelease to GitHub Packages
-    if: github.event.release.prerelease
+    if: >-
+      (github.event_name == 'release' && github.event.release.prerelease) ||
+      (github.event_name == 'workflow_dispatch' && inputs.publish)
     environment: github-packages-release
     runs-on: ubuntu-24.04
     timeout-minutes: 35
@@ -51,11 +59,17 @@ jobs:
           targets: wasm32-unknown-unknown
       - name: Install matching wasm-bindgen CLI
         run: cargo install wasm-bindgen-cli --version 0.2.117 --locked
-      - name: Require matching prerelease tag and validate package
+      - name: Require reviewed prerelease source and validate package
         env:
+          EVENT_NAME: ${{ github.event_name }}
           RELEASE_TAG: ${{ github.event.release.tag_name }}
         run: |
-          test "${RELEASE_TAG#v}" = "$(node -p "require('./bindings/js/package.json').version")"
+          package_version="$(node -p "require('./bindings/js/package.json').version")"
+          if [ "$EVENT_NAME" = "release" ]; then
+            test "${RELEASE_TAG#v}" = "$package_version"
+          else
+            test "$GITHUB_REF_NAME" = "main"
+          fi
           ./scripts/test_js_npm_package.sh
       - name: Build npm package
         run: |

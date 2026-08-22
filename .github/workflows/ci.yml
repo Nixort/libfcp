@@ -38,10 +38,24 @@ jobs:
         run: cargo fmt --all -- --check
       - name: Verify cross-platform publication contract
         run: ./scripts/test_cross_platform_publication_contract.sh
-      - name: Test portable workspace
-        run: cargo test --workspace --exclude libfcp-webrtc --locked
-      - name: Lint portable workspace
-        run: cargo clippy --workspace --exclude libfcp-webrtc --all-targets --locked -- -D warnings
+      - name: Test Rust 1.85 portable crates
+        run: |
+          cargo test \
+            -p libfcp-core \
+            -p libfcp \
+            -p libfcp-server \
+            -p libfcp-ffi \
+            -p libfcp-wasm \
+            --locked
+      - name: Lint Rust 1.85 portable crates
+        run: |
+          cargo clippy \
+            -p libfcp-core \
+            -p libfcp \
+            -p libfcp-server \
+            -p libfcp-ffi \
+            -p libfcp-wasm \
+            --all-targets --locked -- -D warnings
       - name: Check portable core targets
         run: |
           cargo check -p libfcp-core --no-default-features --locked --target aarch64-linux-android

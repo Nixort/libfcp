@@ -20,8 +20,8 @@ categories = ["database", "authentication"]
 
 [dependencies]
 async-trait.workspace = true
-fcp-fabric-auth = { path = "../fcp-fabric-auth" }
-fcp-fabric-domain = { path = "../fcp-fabric-domain" }
+fcp-fabric-auth = { version = "=1.0.0-rc.1", path = "../fcp-fabric-auth" }
+fcp-fabric-domain = { version = "=1.0.0-rc.1", path = "../fcp-fabric-domain" }
 serde.workspace = true
 serde_json.workspace = true
 secrecy.workspace = true

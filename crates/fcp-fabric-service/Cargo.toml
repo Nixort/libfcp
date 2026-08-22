@@ -30,11 +30,11 @@ aws-config = { version = "=1.11.0", default-features = false, features = ["defau
 aws-sdk-kms = { version = "=1.116.0", default-features = false, features = ["default-https-client", "rt-tokio"], optional = true }
 axum.workspace = true
 base64.workspace = true
-fcp-fabric-auth = { path = "../fcp-fabric-auth" }
-fcp-fabric-domain = { path = "../fcp-fabric-domain" }
-fcp-fabric-store = { path = "../fcp-fabric-store" }
+fcp-fabric-auth = { version = "=1.0.0-rc.1", path = "../fcp-fabric-auth" }
+fcp-fabric-domain = { version = "=1.0.0-rc.1", path = "../fcp-fabric-domain" }
+fcp-fabric-store = { version = "=1.0.0-rc.1", path = "../fcp-fabric-store" }
 rand_core.workspace = true
-libfcp-core = { path = "../libfcp-core" }
+libfcp-core = { version = "=1.0.0-rc.1", path = "../libfcp-core" }
 serde.workspace = true
 serde_json.workspace = true
 secrecy.workspace = true
