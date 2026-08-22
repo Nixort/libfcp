@@ -51,7 +51,6 @@ jobs:
           node-version: "22.14.0"
           registry-url: https://npm.pkg.github.com
           scope: "@nixort"
-          package-manager-cache: false
       # dtolnay/rust-toolchain, pinned by immutable commit SHA.
       - uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772
         with:
