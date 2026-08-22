@@ -1,0 +1,45 @@
+# Copyright Nixort <https://github.com/Nixort> 2026.
+#
+# License: GNU General Public License v3.0 only.
+# You can find the license file in the project root.
+#
+# Federated CFR Connect Protocol (FCP).
+
+aws_region         = "eu-central-1"
+name_prefix        = "fcp-fabric-staging"
+fabric_public_domain = "fabric.staging.example.com"
+
+# Select two zones in the chosen Region. Use a pinned approved AMI that includes
+# awscli v2, jq and the SSM Agent; no public SSH is configured.
+availability_zones = ["eu-central-1a", "eu-central-1b"]
+service_ami_id     = "ami-REPLACE_WITH_APPROVED_ARM64_AMI"
+service_instance_type = "t4g.small"
+
+# Both objects must live in a versioned private S3 bucket and their exact VersionId
+# values must be supplied. The Fabric archive must contain fcp-fabric,
+# fcp-fabric-kms and fcp-fabric-service at its archive root.
+service_artifact_s3_uri            = "s3://REPLACE_WITH_ARTIFACT_BUCKET/fcp-fabric/fcp-fabric-linux-aarch64.tar.gz"
+service_artifact_s3_version_id     = "REPLACE_WITH_S3_VERSION_ID"
+cloudflared_artifact_s3_uri        = "s3://REPLACE_WITH_ARTIFACT_BUCKET/cloudflared/cloudflared-linux-aarch64"
+cloudflared_artifact_s3_version_id = "REPLACE_WITH_S3_VERSION_ID"
+
+# Create the named Tunnel in the staging Cloudflare account, then store only its
+# credential JSON in the Terraform-created Secrets Manager secret after apply.
+cloudflare_tunnel_id = "00000000-0000-0000-0000-000000000000"
+
+database_name            = "fcp_fabric"
+database_master_username = "fabric_master"
+database_instance_class  = "db.m6g.large"
+log_retention_days       = 90
+rds_deletion_protection  = true
+
+# Tune from the staging workload baseline before production. Alert actions are
+# non-secret SNS or incident-routing ARNs and are mandatory for external acceptance.
+rds_freeable_memory_alarm_bytes = 268435456
+rds_connection_alarm_threshold  = 80
+alarm_actions                    = ["arn:aws:sns:eu-central-1:REPLACE_WITH_ACCOUNT_ID:fcp-fabric-staging-alerts"]
+
+tags = {
+  Owner       = "REPLACE_WITH_TEAM"
+  ChangeTicket = "REPLACE_WITH_NONPRODUCTION_CHANGE_TICKET"
+}

@@ -1,0 +1,94 @@
+# Copyright Nixort <https://github.com/Nixort> 2026.
+#
+# License: GNU General Public License v3.0 only.
+# You can find the license file in the project root.
+#
+# Federated CFR Connect Protocol (FCP).
+#
+# This workflow validates and attaches prerelease artifacts. It never publishes
+# to Maven Central, GitHub Packages, or any third-party registry.
+
+name: libfcp JVM prerelease
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/jvm-prerelease.yml"
+      - "bindings/java/**"
+      - "bindings/kotlin/**"
+      - "crates/libfcp-ffi/**"
+      - "crates/libfcp/**"
+      - "crates/libfcp-core/**"
+      - "scripts/package_jvm_bindings.sh"
+      - "scripts/test_jvm_maven_package.sh"
+      - "Cargo.toml"
+      - "Cargo.lock"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/jvm-prerelease.yml"
+      - "bindings/java/**"
+      - "bindings/kotlin/**"
+      - "crates/libfcp-ffi/**"
+      - "crates/libfcp/**"
+      - "crates/libfcp-core/**"
+      - "scripts/package_jvm_bindings.sh"
+      - "scripts/test_jvm_maven_package.sh"
+      - "Cargo.toml"
+      - "Cargo.lock"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  attestations: write
+  id-token: write
+
+concurrency:
+  group: libfcp-jvm-prerelease-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  package:
+    name: Java 17/Kotlin JVM package (Linux x86_64)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      # actions/checkout v4.1.7, pinned by immutable commit SHA.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      # actions/setup-java v4, pinned by immutable commit SHA.
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      # dtolnay/rust-toolchain, pinned by immutable commit SHA.
+      - uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772
+        with:
+          toolchain: stable
+      - name: Install Kotlin compiler
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes kotlin
+      - name: Check package scripts and JVM source compilation
+        run: |
+          bash -n scripts/package_jvm_bindings.sh
+          bash -n scripts/test_jvm_maven_package.sh
+          ./scripts/test_jvm_maven_package.sh
+      - name: Build distributable Linux classifier repository
+        run: |
+          LIBFCP_JVM_PACKAGE_DIR="$GITHUB_WORKSPACE/dist/jvm-maven" \
+            ./scripts/package_jvm_bindings.sh
+      # actions/upload-artifact v4.6.2, pinned by immutable commit SHA.
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: libfcp-jvm-maven-linux-x86_64
+          path: dist/jvm-maven/maven-repository
+          if-no-files-found: error
+          retention-days: 14
+      # actions/attest v4, pinned by immutable commit SHA. Attest only a trusted
+      # main-branch build; pull requests still receive the test and workflow artifact.
+      - name: Attest Linux Maven artifacts
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
+        with:
+          subject-path: dist/jvm-maven/maven-repository/**

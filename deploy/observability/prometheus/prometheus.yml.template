@@ -1,0 +1,44 @@
+# Copyright Nixort <https://github.com/Nixort> 2026.
+#
+# License: GNU General Public License v3.0 only.
+# You can find the license file in the project root.
+#
+# Federated CFR Connect Protocol (FCP).
+
+global:
+  scrape_interval: 30s
+  evaluation_interval: 30s
+
+rule_files:
+  - /etc/prometheus/fcp-fabric-alerts.yml
+
+scrape_configs:
+  - job_name: fcp-fabric-liveness
+    metrics_path: /probe
+    params:
+      module: [fabric_liveness]
+    static_configs:
+      - targets: [http://127.0.0.1:8080/healthz]
+        labels:
+          service: fcp-fabric
+          probe: liveness
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - target_label: __address__
+        replacement: 127.0.0.1:9115
+
+  - job_name: fcp-fabric-readiness
+    metrics_path: /probe
+    params:
+      module: [fabric_readiness]
+    static_configs:
+      - targets: [http://127.0.0.1:8080/readyz]
+        labels:
+          service: fcp-fabric
+          probe: readiness
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - target_label: __address__
+        replacement: 127.0.0.1:9115

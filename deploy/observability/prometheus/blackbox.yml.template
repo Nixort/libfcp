@@ -1,0 +1,26 @@
+# Copyright Nixort <https://github.com/Nixort> 2026.
+#
+# License: GNU General Public License v3.0 only.
+# You can find the license file in the project root.
+#
+# Federated CFR Connect Protocol (FCP).
+
+modules:
+  fabric_liveness:
+    prober: http
+    timeout: 5s
+    http:
+      method: GET
+      valid_status_codes: [204]
+      headers:
+        Host: ["<FABRIC_PUBLIC_DOMAIN>"]
+      fail_if_ssl: true
+  fabric_readiness:
+    prober: http
+    timeout: 5s
+    http:
+      method: GET
+      valid_status_codes: [200]
+      headers:
+        Host: ["<FABRIC_PUBLIC_DOMAIN>"]
+      fail_if_ssl: true

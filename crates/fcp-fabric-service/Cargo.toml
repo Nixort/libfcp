@@ -1,0 +1,59 @@
+# Copyright Nixort <https://github.com/Nixort> 2026.
+#
+# License: GNU General Public License v3.0 only.
+# You can find the license file in the project root.
+#
+# Federated CFR Connect Protocol (FCP).
+
+[package]
+name = "fcp-fabric-service"
+version.workspace = true
+edition.workspace = true
+rust-version = "1.98"
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Loopback HTTP origin service for multi-tenant FCP Fabric federation behind managed TLS."
+keywords = ["fcp", "federation", "server", "authentication"]
+categories = ["authentication", "web-programming::http-server"]
+
+[features]
+default = []
+# Production AWS KMS provider for envelope-encrypted TOTP data keys. This is
+# opt-in so portable/default Fabric builds do not acquire cloud SDK dependencies.
+aws-kms = ["dep:aws-config", "dep:aws-sdk-kms"]
+
+[dependencies]
+async-trait.workspace = true
+aws-config = { version = "=1.11.0", default-features = false, features = ["default-https-client", "rt-tokio"], optional = true }
+aws-sdk-kms = { version = "=1.116.0", default-features = false, features = ["default-https-client", "rt-tokio"], optional = true }
+axum.workspace = true
+base64.workspace = true
+fcp-fabric-auth = { path = "../fcp-fabric-auth" }
+fcp-fabric-domain = { path = "../fcp-fabric-domain" }
+fcp-fabric-store = { path = "../fcp-fabric-store" }
+rand_core.workspace = true
+libfcp-core = { path = "../libfcp-core" }
+serde.workspace = true
+serde_json.workspace = true
+secrecy.workspace = true
+sha2.workspace = true
+thiserror.workspace = true
+time.workspace = true
+tokio.workspace = true
+tower.workspace = true
+tower-http.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+url.workspace = true
+uuid.workspace = true
+webauthn-rs.workspace = true
+zeroize.workspace = true
+
+[dev-dependencies]
+ed25519-dalek = { workspace = true, default-features = false }
+ml-dsa = { workspace = true, default-features = false, features = ["alloc"] }
+
+[lints]
+workspace = true

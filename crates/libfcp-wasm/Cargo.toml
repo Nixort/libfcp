@@ -1,0 +1,34 @@
+# Copyright Nixort <https://github.com/Nixort> 2026.
+#
+# License: GNU General Public License v3.0 only.
+# You can find the license file in the project root.
+#
+# Federated CFR Connect Protocol (FCP).
+
+[package]
+name = "libfcp-wasm"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Browser WASM façade over the portable Federated CFR Connect Protocol core"
+keywords = ["wasm", "javascript", "federation", "webrtc"]
+categories = ["wasm", "cryptography", "network-programming"]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+ed25519-dalek.workspace = true
+getrandom = { version = "0.2", features = ["js"] }
+libfcp-core = { version = "=1.0.0-rc.1", path = "../libfcp-core", default-features = false }
+ml-dsa.workspace = true
+rand_core.workspace = true
+wasm-bindgen = "=0.2.117"
+zeroize.workspace = true
+
+[lints]
+workspace = true

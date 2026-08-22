@@ -1,0 +1,37 @@
+# Copyright Nixort <https://github.com/Nixort> 2026.
+#
+# License: GNU General Public License v3.0 only.
+# You can find the license file in the project root.
+#
+# Federated CFR Connect Protocol (FCP).
+
+groups:
+  - name: fcp-fabric-availability
+    rules:
+      - alert: FcpFabricLivenessFailed
+        expr: probe_success{service="fcp-fabric",probe="liveness"} == 0
+        for: 2m
+        labels:
+          severity: page
+          service: fcp-fabric
+        annotations:
+          summary: FCP Fabric liveness probe is failing
+          runbook: deploy/operations/incident-response.md#service-unavailable
+      - alert: FcpFabricReadinessFailed
+        expr: probe_success{service="fcp-fabric",probe="readiness"} == 0
+        for: 5m
+        labels:
+          severity: page
+          service: fcp-fabric
+        annotations:
+          summary: FCP Fabric readiness probe is failing
+          runbook: deploy/operations/incident-response.md#service-unavailable
+      - alert: FcpFabricProbeTargetMissing
+        expr: absent(probe_success{service="fcp-fabric"})
+        for: 5m
+        labels:
+          severity: page
+          service: fcp-fabric
+        annotations:
+          summary: FCP Fabric monitoring target is missing
+          runbook: deploy/operations/incident-response.md#monitoring-blindness

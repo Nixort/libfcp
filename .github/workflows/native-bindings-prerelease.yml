@@ -1,0 +1,101 @@
+# Copyright Nixort <https://github.com/Nixort> 2026.
+#
+# License: GNU General Public License v3.0 only.
+# You can find the license file in the project root.
+#
+# Federated CFR Connect Protocol (FCP).
+#
+# This workflow validates and attaches prerelease artifacts. It never publishes
+# to PyPI, NuGet, GitHub Packages, or any third-party registry.
+
+name: libfcp native bindings prerelease
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/native-bindings-prerelease.yml"
+      - "bindings/cpp/**"
+      - "bindings/python/**"
+      - "bindings/csharp/**"
+      - "bindings/go/**"
+      - "bindings/java/**"
+      - "bindings/kotlin/**"
+      - "bindings/js/**"
+      - "crates/libfcp-ffi/**"
+      - "crates/libfcp-wasm/**"
+      - "crates/libfcp/**"
+      - "crates/libfcp-core/**"
+      - "scripts/package_native_binding_bundle.sh"
+      - "scripts/test_foreign_bindings.sh"
+      - "Cargo.toml"
+      - "Cargo.lock"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/native-bindings-prerelease.yml"
+      - "bindings/cpp/**"
+      - "bindings/python/**"
+      - "bindings/csharp/**"
+      - "bindings/go/**"
+      - "bindings/java/**"
+      - "bindings/kotlin/**"
+      - "bindings/js/**"
+      - "crates/libfcp-ffi/**"
+      - "crates/libfcp-wasm/**"
+      - "crates/libfcp/**"
+      - "crates/libfcp-core/**"
+      - "scripts/package_native_binding_bundle.sh"
+      - "scripts/test_foreign_bindings.sh"
+      - "Cargo.toml"
+      - "Cargo.lock"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  attestations: write
+  id-token: write
+
+concurrency:
+  group: libfcp-native-bindings-prerelease-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-and-package:
+    name: Native FFI façades and Linux x86_64 bundle
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      # actions/checkout v4.1.7, pinned by immutable commit SHA.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      # dtolnay/rust-toolchain, pinned by immutable commit SHA.
+      - uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772
+        with:
+          toolchain: stable
+          targets: wasm32-unknown-unknown
+      - name: Install Kotlin compiler and matching wasm-bindgen CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes kotlin
+          cargo install wasm-bindgen-cli --version 0.2.117 --locked
+      - name: Run complete foreign-binding validation
+        run: |
+          bash -n scripts/package_native_binding_bundle.sh
+          ./scripts/test_foreign_bindings.sh
+      - name: Build distributable native binding bundle
+        run: |
+          LIBFCP_NATIVE_BINDING_PACKAGE_DIR="$GITHUB_WORKSPACE/dist/native-bindings" \
+            ./scripts/package_native_binding_bundle.sh
+      # actions/upload-artifact v4.6.2, pinned by immutable commit SHA.
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: libfcp-native-bindings-linux-x86_64
+          path: dist/native-bindings
+          if-no-files-found: error
+          retention-days: 14
+      # actions/attest v4, pinned by immutable commit SHA. Attest only a trusted
+      # main-branch build; pull requests still receive validation and artifact output.
+      - name: Attest native binding bundle
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
+        with:
+          subject-path: dist/native-bindings/*.tar.gz

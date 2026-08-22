@@ -1,0 +1,180 @@
+#!/usr/bin/env bash
+# Copyright Nixort <https://github.com/Nixort> 2026.
+#
+# License: GNU General Public License v3.0 only.
+# You can find the license file in the project root.
+#
+# Federated CFR Connect Protocol (FCP).
+
+set -euo pipefail
+
+readonly SERVICE_URI='${service_artifact_s3_uri}'
+readonly SERVICE_VERSION='${service_artifact_s3_version_id}'
+readonly CLOUDFLARED_URI='${cloudflared_artifact_s3_uri}'
+readonly CLOUDFLARED_VERSION='${cloudflared_artifact_s3_version_id}'
+readonly FABRIC_DOMAIN='${fabric_public_domain}'
+readonly TUNNEL_ID='${cloudflare_tunnel_id}'
+readonly RDS_SECRET_ARN='${rds_master_secret_arn}'
+readonly RUNTIME_SECRET_ARN='${fabric_runtime_secret_arn}'
+readonly TUNNEL_SECRET_ARN='${cloudflare_tunnel_credentials_secret_arn}'
+readonly RDS_ENDPOINT='${rds_endpoint}'
+readonly RDS_DATABASE='${database_name}'
+readonly CLOUDWATCH_LOG_GROUP='${cloudwatch_log_group}'
+
+require_command() {
+  command -v "$1" >/dev/null 2>&1 || {
+    printf 'required command missing: %s\n' "$1" >&2
+    exit 1
+  }
+}
+
+require_command aws
+require_command jq
+require_command tar
+require_command base64
+[[ -x /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl ]] || {
+  printf '%s\n' 'approved AMI must include the Amazon CloudWatch Agent' >&2
+  exit 1
+}
+
+install -d -m 0755 /etc/fcp-fabric /etc/cloudflared /usr/local/libexec /var/lib/fcp-fabric
+id -u fcp-fabric >/dev/null 2>&1 || useradd --system --home-dir /var/lib/fcp-fabric --shell /usr/sbin/nologin fcp-fabric
+id -u cloudflared >/dev/null 2>&1 || useradd --system --home-dir /var/lib/cloudflared --shell /usr/sbin/nologin cloudflared
+chown fcp-fabric:fcp-fabric /var/lib/fcp-fabric
+
+service_bucket=$(printf '%s' "$SERVICE_URI" | sed -E 's#^s3://([^/]+)/.*#\1#')
+service_key=$(printf '%s' "$SERVICE_URI" | sed -E 's#^s3://[^/]+/(.*)#\1#')
+cloudflared_bucket=$(printf '%s' "$CLOUDFLARED_URI" | sed -E 's#^s3://([^/]+)/.*#\1#')
+cloudflared_key=$(printf '%s' "$CLOUDFLARED_URI" | sed -E 's#^s3://[^/]+/(.*)#\1#')
+
+aws s3api get-object --bucket "$service_bucket" --key "$service_key" --version-id "$SERVICE_VERSION" /tmp/fcp-fabric.tar.gz >/dev/null
+tar --extract --gzip --file /tmp/fcp-fabric.tar.gz --directory /usr/local/bin \
+  fcp-fabric fcp-fabric-kms fcp-fabric-service
+chmod 0755 /usr/local/bin/fcp-fabric /usr/local/bin/fcp-fabric-kms /usr/local/bin/fcp-fabric-service
+rm -f /tmp/fcp-fabric.tar.gz
+
+aws s3api get-object --bucket "$cloudflared_bucket" --key "$cloudflared_key" --version-id "$CLOUDFLARED_VERSION" /tmp/cloudflared >/dev/null
+install -m 0755 /tmp/cloudflared /usr/bin/cloudflared
+rm -f /tmp/cloudflared
+
+printf '%s' '${fcp_service_unit_base64}' | base64 --decode > /etc/systemd/system/fcp-fabric.service
+printf '%s' '${cloudflared_service_unit_base64}' | base64 --decode > /etc/systemd/system/fcp-fabric-cloudflared.service
+
+cat > /etc/cloudflared/fcp-fabric.yml <<CONFIG
+# Generated only from non-secret deployment identifiers.
+tunnel: $TUNNEL_ID
+credentials-file: /etc/cloudflared/$TUNNEL_ID.json
+ingress:
+  - hostname: $FABRIC_DOMAIN
+    service: http://127.0.0.1:8080
+    originRequest:
+      httpHostHeader: $FABRIC_DOMAIN
+      connectTimeout: 5s
+      keepAliveConnections: 100
+      keepAliveTimeout: 30s
+  - service: http_status:404
+CONFIG
+chmod 0600 /etc/cloudflared/fcp-fabric.yml
+chown cloudflared:cloudflared /etc/cloudflared/fcp-fabric.yml
+
+cat > /usr/local/libexec/fcp-fabric-sync-secrets <<'SYNC'
+#!/usr/bin/env bash
+set -euo pipefail
+
+readonly RDS_SECRET_ARN='${rds_master_secret_arn}'
+readonly RUNTIME_SECRET_ARN='${fabric_runtime_secret_arn}'
+readonly TUNNEL_SECRET_ARN='${cloudflare_tunnel_credentials_secret_arn}'
+readonly RDS_ENDPOINT='${rds_endpoint}'
+readonly RDS_DATABASE='${database_name}'
+readonly FABRIC_DOMAIN='${fabric_public_domain}'
+readonly TUNNEL_ID='${cloudflare_tunnel_id}'
+
+rds_secret=$(aws secretsmanager get-secret-value --secret-id "$RDS_SECRET_ARN" --query SecretString --output text)
+runtime_secret=$(aws secretsmanager get-secret-value --secret-id "$RUNTIME_SECRET_ARN" --query SecretString --output text)
+tunnel_secret=$(aws secretsmanager get-secret-value --secret-id "$TUNNEL_SECRET_ARN" --query SecretString --output text)
+rds_username=$(printf '%s' "$rds_secret" | jq -er '.username | strings | select(length > 0)')
+rds_password=$(printf '%s' "$rds_secret" | jq -er '.password | strings | select(length > 0)')
+
+printf '%s' "$tunnel_secret" | jq -e 'type == "object"' >/dev/null
+printf '%s' "$tunnel_secret" > "/etc/cloudflared/$TUNNEL_ID.json"
+chown cloudflared:cloudflared "/etc/cloudflared/$TUNNEL_ID.json"
+chmod 0600 "/etc/cloudflared/$TUNNEL_ID.json"
+
+printf '%s' "$runtime_secret" | jq -e '
+  type == "object" and
+  ([
+    "FABRIC_PASSWORD_DUMMY_VERIFIER",
+    "FABRIC_LOGIN_TRANSACTION_DIGEST_KEY",
+    "FABRIC_LOGIN_BINDING_DIGEST_KEY",
+    "FABRIC_TOTP_ACTIVE_KEY_REFERENCE",
+    "FABRIC_TOTP_ISSUER",
+    "FABRIC_SESSION_DIGEST_KEY",
+    "FABRIC_STEP_UP_DIGEST_KEY",
+    "FABRIC_WEBAUTHN_CEREMONY_DIGEST_KEY",
+    "FABRIC_WEBAUTHN_BINDING_DIGEST_KEY"
+  ] | all(. as $key | has($key) and (.[$key] | type == "string" and length > 0)))
+' >/dev/null
+
+{
+  printf 'FCP_DATABASE_URL=%q\n' "postgresql://$rds_username:$rds_password@$RDS_ENDPOINT:5432/$RDS_DATABASE?sslmode=require"
+  printf 'FABRIC_PUBLIC_DOMAIN=%q\n' "$FABRIC_DOMAIN"
+  printf 'FABRIC_ENABLE_HSTS=true\n'
+  printf 'RUST_LOG=fcp_fabric_service=info\n'
+  printf '%s' "$runtime_secret" | jq -r 'to_entries[] | "\(.key)=\(.value|@sh)"'
+} > /etc/fcp-fabric/fcp-fabric.env
+chown root:fcp-fabric /etc/fcp-fabric/fcp-fabric.env
+chmod 0640 /etc/fcp-fabric/fcp-fabric.env
+SYNC
+chmod 0700 /usr/local/libexec/fcp-fabric-sync-secrets
+
+cat > /etc/systemd/system/fcp-fabric-secrets.service <<UNIT
+[Unit]
+Description=Render FCP Fabric runtime secrets from AWS Secrets Manager
+After=network-online.target
+Wants=network-online.target
+Before=fcp-fabric.service fcp-fabric-cloudflared.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/libexec/fcp-fabric-sync-secrets
+UNIT
+
+mkdir -p /etc/systemd/system/fcp-fabric.service.d /etc/systemd/system/fcp-fabric-cloudflared.service.d
+cat > /etc/systemd/system/fcp-fabric.service.d/logging.conf <<UNIT
+[Service]
+StandardOutput=append:/var/lib/fcp-fabric/service.json.log
+StandardError=append:/var/lib/fcp-fabric/service.json.log
+UNIT
+cat > /etc/systemd/system/fcp-fabric.service.d/secrets.conf <<UNIT
+[Unit]
+Requires=fcp-fabric-secrets.service
+After=fcp-fabric-secrets.service
+UNIT
+cat > /etc/systemd/system/fcp-fabric-cloudflared.service.d/secrets.conf <<UNIT
+[Unit]
+Requires=fcp-fabric-secrets.service
+After=fcp-fabric-secrets.service
+UNIT
+
+cat > /opt/aws/amazon-cloudwatch-agent/etc/fcp-fabric.json <<CONFIG
+{
+  "logs": {
+    "logs_collected": {
+      "files": {
+        "collect_list": [{
+          "file_path": "/var/lib/fcp-fabric/service.json.log",
+          "log_group_name": "$CLOUDWATCH_LOG_GROUP",
+          "log_stream_name": "{instance_id}/fcp-fabric-service",
+          "retention_in_days": ${log_retention_days}
+        }]
+      }
+    }
+  }
+}
+CONFIG
+/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
+  -a fetch-config -m ec2 -s -c file:/opt/aws/amazon-cloudwatch-agent/etc/fcp-fabric.json
+
+systemctl daemon-reload
+systemctl enable fcp-fabric-secrets.service
+printf '%s\n' 'FCP Fabric staging bootstrap complete. Do not start Fabric or cloudflared until migrations, active TOTP envelope provisioning and runtime secret validation have completed through approved SSM operations.'

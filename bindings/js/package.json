@@ -1,0 +1,40 @@
+{
+  "name": "@nixort/libfcp",
+  "version": "1.0.0-rc.1",
+  "description": "Canonical FCP verification and connection-state WASM façade for Node.js and browser bundlers.",
+  "license": "GPL-3.0-only",
+  "author": {
+    "name": "Nixort",
+    "email": "nixort@proton.me",
+    "url": "https://github.com/Nixort"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Nixort/libfcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Nixort/libfcp/issues"
+  },
+  "homepage": "https://github.com/Nixort/libfcp#readme",
+  "type": "commonjs",
+  "main": "libfcp_wasm.js",
+  "types": "libfcp_wasm.d.ts",
+  "files": [
+    "libfcp_wasm.js",
+    "libfcp_wasm.d.ts",
+    "libfcp_wasm_bg.wasm",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "test": "node consumer-smoke.cjs"
+  }
+}

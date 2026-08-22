@@ -1,0 +1,15 @@
+<!-- Copyright Nixort <https://github.com/Nixort> 2026.
+
+License: GNU General Public License v3.0 only.
+You can find the license file in the project root.
+
+Federated CFR Connect Protocol (FCP). -->
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+</Project>

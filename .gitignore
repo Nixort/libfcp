@@ -1,0 +1,47 @@
+# Rust and local build outputs
+/target/
+/build/
+/dist/
+
+# Managed-language and package outputs
+**/bin/
+**/obj/
+**/node_modules/
+**/__pycache__/
+*.class
+*.jar
+*.nupkg
+*.snupkg
+*.whl
+*.egg-info/
+*.pyc
+*.pyo
+*.tgz
+*.tar.gz
+*.zip
+*.so
+*.dll
+*.dylib
+*.wasm
+
+# Local environment, secret material and infrastructure state
+.env
+.env.local
+.env.*
+!.env.example
+!.env.*.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+terraform.tfstate
+terraform.tfstate.*
+terraform.tfvars
+
+# Editor and operating-system files
+.DS_Store
+.idea/
+.vscode/
+*.swp

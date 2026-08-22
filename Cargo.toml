@@ -1,0 +1,90 @@
+# Copyright Nixort <https://github.com/Nixort> 2026.
+#
+# License: GNU General Public License v3.0 only.
+# You can find the license file in the project root.
+#
+# Federated CFR Connect Protocol (FCP).
+
+[workspace]
+resolver = "3"
+members = [
+  "crates/libfcp-core",
+  "crates/libfcp",
+  "crates/libfcp-server",
+  "crates/libfcp-webrtc",
+  "crates/libfcp-ffi",
+  "crates/libfcp-wasm",
+  "crates/fcp-fabric-domain",
+  "crates/fcp-fabric-auth",
+  "crates/fcp-fabric-store",
+  "crates/fcp-fabric-service",
+  "crates/fcp-fabricctl",
+]
+
+[workspace.package]
+version = "1.0.0-rc.1"
+edition = "2021"
+rust-version = "1.85"
+license = "GPL-3.0-only"
+authors = ["Nixort"]
+repository = "https://github.com/Nixort/libfcp"
+homepage = "https://github.com/Nixort/libfcp"
+
+[workspace.dependencies]
+blake3 = { version = "1.8", default-features = false, features = ["pure"] }
+cfr_protocol = { version = "=1.0.0-rc.1", default-features = false }
+ed25519-dalek = { version = "3.0", default-features = false, features = ["alloc", "fast", "zeroize"] }
+ml-dsa = { version = "0.1.1", default-features = false, features = ["alloc"] }
+thiserror = { version = "2.0", default-features = false }
+aes-gcm = { version = "0.10.3", features = ["aes", "zeroize"] }
+argon2 = { version = "0.5.3", features = ["std"] }
+async-trait = "0.1"
+axum = { version = "0.8.6", features = ["json", "macros"] }
+base64 = "0.22"
+bytes = "1.10"
+clap = { version = "4.5.53", features = ["derive", "env"] }
+hmac = "0.12.1"
+idna = "=1.1.0"
+rand_core = { version = "0.6.4", features = ["getrandom"] }
+rpassword = "7.4"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+secrecy = "0.10.3"
+sha2 = "0.10.9"
+sqlx-core = { version = "=0.8.6", default-features = false, features = ["_rt-tokio", "_tls-rustls-ring-webpki", "migrate", "time", "uuid"] }
+sqlx-postgres = { version = "=0.8.6", default-features = false, features = ["migrate", "time", "uuid"] }
+subtle = "2.6"
+time = { version = "=0.3.47", features = ["formatting", "macros", "parsing", "serde-well-known"] }
+tokio = { version = "1.48", features = ["macros", "rt-multi-thread", "sync", "time", "net", "signal"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["catch-panic", "limit", "request-id", "sensitive-headers", "trace"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+unicode-normalization = "0.1.24"
+url = "2.5"
+uuid = { version = "1.15", features = ["serde", "v7"] }
+webauthn-rs = { version = "0.5.4", default-features = false, features = ["danger-allow-state-serialisation"] }
+webrtc = { version = "0.20.3", default-features = false, features = ["runtime-tokio"] }
+zeroize = { version = "1.8", features = ["derive"] }
+
+[workspace.lints.rust]
+missing_docs = "deny"
+rust_2018_idioms = { level = "deny", priority = -1 }
+unsafe_code = "deny"
+unsafe_op_in_unsafe_fn = "deny"
+
+[workspace.lints.clippy]
+all = "warn"
+pedantic = "warn"
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+overflow-checks = true
+strip = true
+
+[profile.bench]
+inherits = "release"
+debug = true

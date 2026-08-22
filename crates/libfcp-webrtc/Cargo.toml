@@ -1,0 +1,36 @@
+# Copyright Nixort <https://github.com/Nixort> 2026.
+#
+# License: GNU General Public License v3.0 only.
+# You can find the license file in the project root.
+#
+# Federated CFR Connect Protocol (FCP).
+
+[package]
+name = "libfcp-webrtc"
+version.workspace = true
+edition.workspace = true
+rust-version = "1.98"
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "WebRTC.rs adapter for the libfcp federation SDK"
+keywords = ["webrtc", "federation", "ice", "datachannel"]
+categories = ["network-programming"]
+
+[dependencies]
+async-trait.workspace = true
+bytes.workspace = true
+libfcp-core = { version = "=1.0.0-rc.1", path = "../libfcp-core" }
+libfcp = { version = "=1.0.0-rc.1", path = "../libfcp" }
+serde_json.workspace = true
+thiserror = { workspace = true, features = ["std"] }
+tokio.workspace = true
+webrtc.workspace = true
+
+[dev-dependencies]
+ed25519-dalek.workspace = true
+ml-dsa.workspace = true
+
+[lints]
+workspace = true

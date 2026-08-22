@@ -1,0 +1,35 @@
+# Copyright Nixort <https://github.com/Nixort> 2026.
+#
+# License: GNU General Public License v3.0 only.
+# You can find the license file in the project root.
+#
+# Federated CFR Connect Protocol (FCP).
+
+[package]
+name = "libfcp"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Federation client SDK and transport contract for Federated CFR Connect Protocol"
+keywords = ["federation", "webrtc", "cryptography", "cfr"]
+categories = ["cryptography", "network-programming"]
+
+[dependencies]
+libfcp-core = { version = "=1.0.0-rc.1", path = "../libfcp-core", default-features = false }
+cfr_protocol.workspace = true
+
+[dev-dependencies]
+ed25519-dalek.workspace = true
+ml-dsa.workspace = true
+libfcp-server = { version = "=1.0.0-rc.1", path = "../libfcp-server" }
+
+[features]
+default = ["std"]
+std = ["libfcp-core/std", "cfr_protocol/std"]
+
+[lints]
+workspace = true

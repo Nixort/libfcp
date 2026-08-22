@@ -1,0 +1,88 @@
+# Copyright Nixort <https://github.com/Nixort> 2026.
+#
+# License: GNU General Public License v3.0 only.
+# You can find the license file in the project root.
+#
+# Federated CFR Connect Protocol (FCP).
+#
+# Prerequisite: configure the CARGO_REGISTRY_TOKEN repository secret and a
+# protected GitHub environment named `crates-io-release` with required review.
+
+name: libfcp release
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: "Type PUBLISH-LIBFCP to publish the checked-out release candidate"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: libfcp-crates-io-release
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Validate release candidate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      # actions/checkout v4.1.7, pinned by immutable commit SHA.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      # dtolnay/rust-toolchain, pinned by immutable commit SHA.
+      - uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+      - name: Require an explicit release confirmation
+        env:
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: test "$CONFIRMATION" = "PUBLISH-LIBFCP"
+      - name: Run release quality gate
+        run: |
+          cargo fmt --all -- --check
+          ./scripts/test_cross_platform_publication_contract.sh
+          cargo clippy --workspace --all-targets --locked -- -D warnings
+          cargo test --workspace --locked
+          cargo build --release --workspace --locked
+      - name: Verify standalone core package
+        run: cargo package -p libfcp-core --locked
+
+  publish:
+    name: Publish packages in dependency order
+    needs: validate
+    environment: crates-io-release
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      # actions/checkout v4.1.7, pinned by immutable commit SHA.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      # dtolnay/rust-toolchain, pinned by immutable commit SHA.
+      - uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772
+        with:
+          toolchain: stable
+      - name: Publish in internal dependency order
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          set -euo pipefail
+          publish_and_wait() {
+            package="$1"
+            cargo publish --locked -p "$package"
+            for attempt in $(seq 1 40); do
+              if cargo info "$package@1.0.0-rc.1" >/dev/null 2>&1; then
+                return 0
+              fi
+              sleep 15
+            done
+            echo "Timed out waiting for $package v1.0.0-rc.1 in crates.io index" >&2
+            return 1
+          }
+          publish_and_wait libfcp-core
+          publish_and_wait libfcp-server
+          publish_and_wait libfcp
+          publish_and_wait libfcp-webrtc

@@ -1,0 +1,45 @@
+# Copyright Nixort <https://github.com/Nixort> 2026.
+#
+# License: GNU General Public License v3.0 only.
+# You can find the license file in the project root.
+#
+# Federated CFR Connect Protocol (FCP).
+
+[package]
+name = "libfcp-ffi"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Audited stable C ABI for the Federated CFR Connect Protocol Rust core"
+keywords = ["ffi", "federation", "webrtc", "cryptography"]
+categories = ["api-bindings", "cryptography", "network-programming"]
+
+[lib]
+name = "fcp_ffi"
+crate-type = ["cdylib", "staticlib", "rlib"]
+
+[dependencies]
+cfr_protocol.workspace = true
+ed25519-dalek.workspace = true
+libfcp = { version = "=1.0.0-rc.1", path = "../libfcp" }
+libfcp-core = { version = "=1.0.0-rc.1", path = "../libfcp-core", features = ["std"] }
+ml-dsa.workspace = true
+rand_core.workspace = true
+zeroize.workspace = true
+
+[dev-dependencies]
+libfcp-server = { version = "=1.0.0-rc.1", path = "../libfcp-server" }
+
+[lints.rust]
+missing_docs = "deny"
+rust_2018_idioms = { level = "deny", priority = -1 }
+unsafe_code = "allow"
+unsafe_op_in_unsafe_fn = "deny"
+
+[lints.clippy]
+all = "warn"
+pedantic = "warn"

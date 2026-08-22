@@ -1,0 +1,88 @@
+# Copyright Nixort <https://github.com/Nixort> 2026.
+#
+# License: GNU General Public License v3.0 only.
+# You can find the license file in the project root.
+#
+# Federated CFR Connect Protocol (FCP).
+#
+# This workflow validates and attaches prerelease artifacts. It never publishes
+# to npmjs.com, GitHub Packages, or any third-party registry.
+
+name: libfcp npm prerelease
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/npm-prerelease.yml"
+      - "bindings/js/**"
+      - "crates/libfcp-wasm/**"
+      - "crates/libfcp-core/**"
+      - "scripts/package_js_npm.sh"
+      - "scripts/test_js_npm_package.sh"
+      - "Cargo.toml"
+      - "Cargo.lock"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/npm-prerelease.yml"
+      - "bindings/js/**"
+      - "crates/libfcp-wasm/**"
+      - "crates/libfcp-core/**"
+      - "scripts/package_js_npm.sh"
+      - "scripts/test_js_npm_package.sh"
+      - "Cargo.toml"
+      - "Cargo.lock"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  attestations: write
+  id-token: write
+
+concurrency:
+  group: libfcp-npm-prerelease-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  package:
+    name: Node 22 WASM package
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      # actions/checkout v4.1.7, pinned by immutable commit SHA.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      # actions/setup-node v4, pinned by immutable commit SHA.
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "22.14.0"
+          package-manager-cache: false
+      # dtolnay/rust-toolchain, pinned by immutable commit SHA.
+      - uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772
+        with:
+          toolchain: stable
+          targets: wasm32-unknown-unknown
+      - name: Install matching wasm-bindgen CLI
+        run: cargo install wasm-bindgen-cli --version 0.2.117 --locked
+      - name: Validate package and installed consumer
+        run: |
+          bash -n scripts/package_js_npm.sh
+          bash -n scripts/test_js_npm_package.sh
+          ./scripts/test_js_npm_package.sh
+      - name: Build distributable npm tarball
+        run: |
+          LIBFCP_NPM_PACKAGE_DIR="$GITHUB_WORKSPACE/dist/npm" \
+            ./scripts/package_js_npm.sh
+      # actions/upload-artifact v4.6.2, pinned by immutable commit SHA.
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: libfcp-npm-wasm
+          path: dist/npm/tarballs
+          if-no-files-found: error
+          retention-days: 14
+      # actions/attest v4, pinned by immutable commit SHA. Attest only a trusted
+      # main-branch build; pull requests still receive validation and artifact output.
+      - name: Attest npm tarball
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
+        with:
+          subject-path: dist/npm/tarballs/*.tgz

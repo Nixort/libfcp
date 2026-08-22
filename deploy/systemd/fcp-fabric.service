@@ -1,0 +1,47 @@
+# Copyright Nixort <https://github.com/Nixort> 2026.
+#
+# License: GNU General Public License v3.0 only.
+# You can find the license file in the project root.
+#
+# Federated CFR Connect Protocol (FCP).
+
+[Unit]
+Description=FCP Fabric loopback identity and federation service
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=exec
+User=fcp-fabric
+Group=fcp-fabric
+EnvironmentFile=/etc/fcp-fabric/fcp-fabric.env
+Environment=FABRIC_BIND=127.0.0.1:8080
+ExecStart=/usr/local/bin/fcp-fabric-service
+Restart=on-failure
+RestartSec=5s
+StartLimitIntervalSec=60s
+StartLimitBurst=5
+TimeoutStopSec=30s
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectControlGroups=yes
+ProtectKernelLogs=yes
+ProtectKernelModules=yes
+ProtectKernelTunables=yes
+ProtectClock=yes
+ProtectHostname=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+SystemCallArchitectures=native
+UMask=0077
+ReadWritePaths=/var/lib/fcp-fabric
+
+[Install]
+WantedBy=multi-user.target

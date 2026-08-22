@@ -1,0 +1,45 @@
+# Copyright Nixort <https://github.com/Nixort> 2026.
+#
+# License: GNU General Public License v3.0 only.
+# You can find the license file in the project root.
+#
+# Federated CFR Connect Protocol (FCP).
+
+[Unit]
+Description=Cloudflare managed TLS edge connector for FCP Fabric
+After=network-online.target fcp-fabric.service
+Wants=network-online.target
+Requires=fcp-fabric.service
+
+[Service]
+Type=simple
+User=cloudflared
+Group=cloudflared
+ExecStart=/usr/bin/cloudflared --config /etc/cloudflared/fcp-fabric.yml tunnel run
+Restart=on-failure
+RestartSec=5s
+StartLimitIntervalSec=60s
+StartLimitBurst=5
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectControlGroups=yes
+ProtectKernelLogs=yes
+ProtectKernelModules=yes
+ProtectKernelTunables=yes
+ProtectClock=yes
+ProtectHostname=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+SystemCallArchitectures=native
+UMask=0077
+ReadOnlyPaths=/etc/cloudflared
+
+[Install]
+WantedBy=multi-user.target

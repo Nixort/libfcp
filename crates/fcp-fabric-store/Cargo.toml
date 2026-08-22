@@ -1,0 +1,40 @@
+# Copyright Nixort <https://github.com/Nixort> 2026.
+#
+# License: GNU General Public License v3.0 only.
+# You can find the license file in the project root.
+#
+# Federated CFR Connect Protocol (FCP).
+
+[package]
+name = "fcp-fabric-store"
+version.workspace = true
+edition.workspace = true
+rust-version = "1.98"
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "PostgreSQL persistence and migrations for FCP Fabric services."
+keywords = ["fcp", "postgresql", "federation", "identity"]
+categories = ["database", "authentication"]
+
+[dependencies]
+async-trait.workspace = true
+fcp-fabric-auth = { path = "../fcp-fabric-auth" }
+fcp-fabric-domain = { path = "../fcp-fabric-domain" }
+serde.workspace = true
+serde_json.workspace = true
+secrecy.workspace = true
+sqlx-core.workspace = true
+sqlx-postgres.workspace = true
+thiserror.workspace = true
+time.workspace = true
+uuid.workspace = true
+
+[dev-dependencies]
+tokio.workspace = true
+sqlx-core.workspace = true
+sqlx-postgres.workspace = true
+
+[lints]
+workspace = true

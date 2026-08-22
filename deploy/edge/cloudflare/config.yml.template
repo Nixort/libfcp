@@ -1,0 +1,24 @@
+# Copyright Nixort <https://github.com/Nixort> 2026.
+#
+# License: GNU General Public License v3.0 only.
+# You can find the license file in the project root.
+#
+# Federated CFR Connect Protocol (FCP).
+#
+# Locally managed Cloudflare Tunnel template. Substitute the bounded deployment
+# placeholders during provisioning; do not commit a tunnel credential file.
+tunnel: <CLOUDFLARE_TUNNEL_ID>
+credentials-file: /etc/cloudflared/<CLOUDFLARE_TUNNEL_ID>.json
+
+# The public hostname is TLS-terminated and WAF-protected at Cloudflare. The
+# private service remains HTTP on loopback only; cloudflared establishes the
+# outbound authenticated tunnel and pins the origin Host header.
+ingress:
+  - hostname: <FABRIC_PUBLIC_DOMAIN>
+    service: http://127.0.0.1:8080
+    originRequest:
+      httpHostHeader: <FABRIC_PUBLIC_DOMAIN>
+      connectTimeout: 5s
+      keepAliveConnections: 100
+      keepAliveTimeout: 30s
+  - service: http_status:404

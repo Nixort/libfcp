@@ -1,0 +1,21 @@
+# Copyright Nixort <https://github.com/Nixort> 2026.
+#
+# License: GNU General Public License v3.0 only.
+# You can find the license file in the project root.
+#
+# Federated CFR Connect Protocol (FCP).
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "libfcp-python"
+version = "1.0.0rc1"
+description = "Thin Python ctypes façade for the native Federated CFR Connect Protocol ABI"
+requires-python = ">=3.10"
+license = { text = "GPL-3.0-only" }
+authors = [{ name = "Nixort", email = "nixort@proton.me" }]
+
+[tool.setuptools.packages.find]
+where = ["src"]

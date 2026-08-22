@@ -1,0 +1,38 @@
+# Copyright Nixort <https://github.com/Nixort> 2026.
+#
+# License: GNU General Public License v3.0 only.
+# You can find the license file in the project root.
+#
+# Federated CFR Connect Protocol (FCP).
+
+[package]
+name = "fcp-fabric-auth"
+version.workspace = true
+edition.workspace = true
+rust-version = "1.88"
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Password, authenticator, session and recovery primitives for FCP Fabric services."
+keywords = ["fcp", "authentication", "argon2", "totp"]
+categories = ["authentication", "cryptography"]
+
+[dependencies]
+aes-gcm.workspace = true
+argon2.workspace = true
+base64.workspace = true
+fcp-fabric-domain = { path = "../fcp-fabric-domain" }
+hmac.workspace = true
+rand_core.workspace = true
+secrecy.workspace = true
+sha2.workspace = true
+subtle.workspace = true
+thiserror.workspace = true
+time.workspace = true
+unicode-normalization.workspace = true
+uuid.workspace = true
+zeroize.workspace = true
+
+[lints]
+workspace = true
