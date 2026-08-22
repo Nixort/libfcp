@@ -1,6 +1,6 @@
 # Cross-platform bindings and publication contract
 
-**Status:** `v1.0.0-rc.1` contains **source-level, locally tested FFI façades** for C, C++, Python, Java, Kotlin/JVM, JavaScript/WASM, C# and Go. Reproducible local Maven and npm prerelease packages can now be built for the combined Java 17/Kotlin/JVM API and the Node/browser-bundler WASM façade. GitHub workflows also produce attested Linux `x86_64` native binding bundles. **No Java, Kotlin, Swift, Python, JavaScript, C#, Go or C package is publicly published by this repository at `v1.0.0-rc.1`.** No remote Maven artifact, wheel, npm package, NuGet package, Go module release or platform binary is published either. The currently published surface remains Rust: `libfcp-core`, `libfcp`, `libfcp-server` and the optional `libfcp-webrtc` adapter.
+**Status:** `v1.0.0-rc.1` contains **source-level, locally tested FFI façades** for C, C++, Python, Java, Kotlin/JVM, JavaScript/WASM, C# and Go. Reproducible local Maven and npm prerelease packages can now be built for the combined Java 17/Kotlin/JVM API and the Node/browser-bundler WASM façade. GitHub workflows also produce attested Linux `x86_64` native binding bundles. The Node/browser-bundler package **`@nixort/libfcp@1.0.0-rc.1` is published to GitHub Packages**. No remote Maven artifact, wheel, npmjs package, NuGet package, Go module release or platform binary is published; Java, Kotlin, Swift, Python, C#, Go and C/C++ package publication therefore remains unavailable. The Rust surface remains `libfcp-core`, `libfcp`, `libfcp-server` and the optional `libfcp-webrtc` adapter.
 
 ## One protocol implementation, not language ports
 
@@ -28,7 +28,7 @@ The browser is deliberately a separate runtime surface. `libfcp-wasm` is a `wasm
 | Python 3.10+ | `bindings/python` with `ctypes` | CPython native smoke test; source façade is included in Linux native artifact bundle | Not published to PyPI |
 | Java 17+ | `bindings/java` direct JNI bridge and JAR source | JDK JNI compile/load/action smoke test; isolated Maven consumer loads bundled Linux native libraries | Local Maven artifact only; not published remotely |
 | Kotlin/JVM | `bindings/kotlin` thin delegation to Java/JNI façade | Kotlin/JVM action smoke test; compiled into the same local Maven JAR | Local Maven artifact only; not published remotely |
-| JavaScript/Node/browser | `crates/libfcp-wasm` and `bindings/js` | `wasm-bindgen` Node smoke test and isolated installed-tarball consumer test | Local npm tarball only; not published to npm/GitHub Packages |
+| JavaScript/Node/browser | `crates/libfcp-wasm` and `bindings/js` | `wasm-bindgen` Node smoke test and isolated installed-tarball consumer test | Published as `@nixort/libfcp@1.0.0-rc.1` to GitHub Packages; not published to npmjs |
 | C#/.NET 8 | `bindings/csharp` P/Invoke façade | .NET native smoke test; source façade is included in Linux native artifact bundle | Not published to NuGet |
 | Go 1.22 | `bindings/go` cgo façade | Go cgo native smoke test; source façade is included in Linux native artifact bundle | Not released as a Go module |
 | Swift/iOS/macOS | No source façade in this RC | Requires Apple-host XCFramework and Swift test work | Not published |
@@ -62,7 +62,7 @@ The façade must never accept a password, recovery code, database URL, cloud cre
 | Stateful interoperability | Rust FFI, C, C++, Python, Java, Kotlin, JS/WASM, C# and Go exercise an ordered offer/action lifecycle | Add independent two-runtime, replay and close-lifecycle scenarios per target. |
 | Native lifecycle | Idempotent close APIs and local create/use/close smoke tests | Add sanitizers, memory-leak checks and stress/concurrency tests by target. |
 | Platform transport | Correct FCP action contract is exposed | Run real Android, Apple and browser WebRTC engine tests; Node is not a browser transport test. |
-| Publication integrity | Source packages remain non-publishing and secrets-free; JVM local package emits SHA-256 checksums and CI attests trusted main-branch artifacts | Add SBOM and signed, human-approved registry uploads. |
+| Publication integrity | Source remains secrets-free; JVM local package emits SHA-256 checksums, CI attests trusted `main` artifacts and the JavaScript RC is published to GitHub Packages through an explicitly confirmed workflow | Add an SBOM and any separately approved public npmjs trusted-publisher release. |
 
 ## Packaging and release boundaries
 
@@ -73,14 +73,14 @@ A final package release remains a separate controlled operation. Native target a
 | Java/Kotlin JVM | `io.github.nixort:libfcp:1.0.0-rc.1` plus native classifiers; current local output is `linux-x86_64` | Isolated Maven consumer loads Java and Kotlin façades through bundled JNI libraries; add macOS/Windows classifiers before declaring those targets |
 | Kotlin/Android | `io.github.nixort:libfcp-kotlin-android` AAR | Android `arm64-v8a`/`x86_64` output and instrumented test |
 | Python | `libfcp-python` wheel family | CPython ABI matrix, wheel audit and vector tests |
-| JavaScript | `@nixort/libfcp@1.0.0-rc.1`; current local artifact is a Node-compatible WASM tarball | Isolated npm install/consumer gate; add browser runtime/size and browser WebRTC interoperability before public npm release |
+| JavaScript | Published GitHub Packages RC: `@nixort/libfcp@1.0.0-rc.1`; current artifact is a Node-compatible WASM tarball | Isolated npm install/consumer gate; add browser runtime/size and browser WebRTC interoperability before any public npmjs release |
 | C/C++ | header plus platform archive/shared-library bundle | Linux `x86_64` artifact bundle is automated; add target compiler matrix and platform bundles before a release declaration |
 | C# | `Nixort.LibFcp` prerelease | .NET source façade is included in Linux artifact bundle; add NuGet RID native assets and packaging/consumer gates |
 | Go | module release with declared cgo target support | Go source façade is included in Linux artifact bundle; add Go release builds and declared cgo target matrix |
 
 Run `./scripts/test_jvm_maven_package.sh` to build an isolated local repository, verify JAR/POM checksums, resolve it from a clean Maven cache and execute Java plus Kotlin consumer smoke tests. Run `./scripts/test_js_npm_package.sh` to build an npm tarball, verify its checksum, install it into a clean Node consumer and execute the WASM API smoke test. The GitHub `libfcp JVM prerelease`, `libfcp npm prerelease` and `libfcp native bindings prerelease` workflows repeat those gates, upload short-retention artifacts, and attest only trusted `main` builds.
 
-`@nixort/libfcp` defaults to the repository-linked GitHub Packages registry, preventing an accidental npmjs upload. The separate `libfcp npm GitHub Packages release` workflow can publish only after either a matching GitHub prerelease event or an explicit `workflow_dispatch` confirmation from `main`; both paths enforce the package gates and use a job-scoped `packages: write` token. The manual path permits this RC package to be published without creating a Git tag or GitHub Release. A public npmjs release is intentionally not configured: it needs an npm package record and a separately approved OIDC trusted-publisher relationship before it may be added.[8] [9]
+`@nixort/libfcp` defaults to the repository-linked GitHub Packages registry, preventing an accidental npmjs upload. The `v1.0.0-rc.1` GitHub Packages RC was published through the separate `libfcp npm GitHub Packages release` workflow after an explicit `workflow_dispatch` confirmation from `main`; its package gates, job-scoped `packages: write` token and provenance attestation completed successfully. The same workflow also supports a matching GitHub prerelease event, but the published RC does not require a Git tag or GitHub Release. A public npmjs release is intentionally not configured: it needs an npm package record and a separately approved OIDC trusted-publisher relationship before it may be added.[8] [9]
 
 No registry login, namespace credential, signer secret, cloud credential or endpoint is stored in this repository or supplied through a binding command. A human must approve each upload after the target-specific gates pass.
 
