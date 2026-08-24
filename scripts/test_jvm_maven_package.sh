@@ -10,15 +10,19 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 package_root="$(mktemp -d "${TMPDIR:-/tmp}/libfcp-jvm-package.XXXXXX")"
 trap 'rm -rf "$package_root"' EXIT
+java_home="${JAVA_HOME:-$(dirname "$(dirname "$(readlink -f "$(command -v javac)")")")}"
+version="1.0.0-rc.1"
+artifact_directory="$package_root/maven-repository/io/github/nixort/libfcp/$version"
+central_directory="$package_root/central-staging/io/github/nixort/libfcp/$version"
+central_bundle="$package_root/libfcp-$version-central-bundle.zip"
 
 LIBFCP_JVM_PACKAGE_DIR="$package_root" "$repo_root/scripts/package_jvm_bindings.sh"
-artifact_directory="$package_root/maven-repository/io/github/nixort/libfcp/1.0.0-rc.1"
 for artifact in \
-    libfcp-1.0.0-rc.1.jar \
-    libfcp-1.0.0-rc.1-sources.jar \
-    libfcp-1.0.0-rc.1-javadoc.jar \
-    libfcp-1.0.0-rc.1-linux-x86_64.jar \
-    libfcp-1.0.0-rc.1.pom \
+    "libfcp-$version.jar" \
+    "libfcp-$version-sources.jar" \
+    "libfcp-$version-javadoc.jar" \
+    "libfcp-$version-linux-x86_64.jar" \
+    "libfcp-$version.pom" \
     SHA256SUMS; do
     test -f "$artifact_directory/$artifact"
 done
@@ -27,12 +31,26 @@ done
     sha256sum --check SHA256SUMS
 )
 
+for artifact in "$central_directory"/*.jar "$central_directory"/*.pom; do
+    test -f "$artifact"
+    for algorithm in md5 sha1 sha256 sha512; do
+        test -s "$artifact.$algorithm"
+    done
+    if [[ "${LIBFCP_JVM_SIGN:-0}" == "1" ]]; then
+        test -s "$artifact.asc"
+    fi
+done
+unzip -t "$central_bundle" >/dev/null
+unzip -Z1 "$central_bundle" | grep -Fx "io/github/nixort/libfcp/$version/libfcp-$version.pom" >/dev/null
+unzip -Z1 "$central_bundle" | grep -Fx "io/github/nixort/libfcp/$version/libfcp-$version-linux-x86_64.jar" >/dev/null
+
 consumer="$repo_root/bindings/java/consumer-smoke"
 classpath="$package_root/consumer-classpath.txt"
 consumer_m2="$package_root/consumer-m2"
-mvn -q --batch-mode -f "$consumer/pom.xml" \
+JAVA_HOME="$java_home" PATH="$java_home/bin:$PATH" mvn -q --batch-mode -f "$consumer/pom.xml" \
     -Dmaven.repo.local="$consumer_m2" \
     -Dlibfcp.localRepository="file://$package_root/maven-repository" \
     -DskipTests compile dependency:build-classpath -Dmdep.outputFile="$classpath"
-java -cp "$consumer/target/classes:$(cat "$classpath")" io.github.nixort.libfcp.ConsumerSmoke
-printf '%s\n' 'local Maven package and consumer verification passed'
+"$java_home/bin/java" -cp "$consumer/target/classes:$(cat "$classpath")" \
+    io.github.nixort.libfcp.ConsumerSmoke
+printf '%s\n' 'local Maven package, Central bundle and consumer verification passed'
