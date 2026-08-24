@@ -18,7 +18,14 @@ public sealed class NativeFcpException(uint status) : Exception($"libfcp native 
 }
 
 /// One copied ordered FCP host action.
-public sealed record Action(uint Kind, byte[] Binding, uint Sequence, ushort CloseCode, byte[] Payload);
+public sealed record Action(
+    uint Kind,
+    byte[] Binding,
+    uint Sequence,
+    ushort CloseCode,
+    byte[] EnvelopeId,
+    byte[] RemoteEndpoint,
+    byte[] Payload);
 
 /// A process-local opaque dual-signature signer. Private key material never enters managed memory.
 public sealed class Signer : IDisposable
@@ -151,7 +158,14 @@ public sealed class Connection : IDisposable
         Native.Require(status);
         try
         {
-            return new Action(raw.Kind, raw.BindingBytes(), raw.Sequence, raw.CloseCode, Native.Copy(raw.Payload));
+            return new Action(
+                raw.Kind,
+                raw.BindingBytes(),
+                raw.Sequence,
+                raw.CloseCode,
+                raw.EnvelopeIdBytes(),
+                Native.Copy(raw.RemoteEndpoint),
+                Native.Copy(raw.Payload));
         }
         finally
         {
@@ -220,17 +234,32 @@ internal static unsafe class Native
         internal fixed byte Binding[32];
         internal uint Sequence;
         internal ushort CloseCode;
+        internal fixed byte EnvelopeId[32];
+        internal OwnedBuffer RemoteEndpoint;
         internal OwnedBuffer Payload;
 
         internal byte[] BindingBytes()
         {
+            fixed (byte* source = Binding)
+            {
+                return CopyFixed(source);
+            }
+        }
+
+        internal byte[] EnvelopeIdBytes()
+        {
+            fixed (byte* source = EnvelopeId)
+            {
+                return CopyFixed(source);
+            }
+        }
+
+        private static byte[] CopyFixed(byte* source)
+        {
             var output = new byte[32];
             fixed (byte* destination = output)
             {
-                fixed (byte* source = Binding)
-                {
-                    Buffer.MemoryCopy(source, destination, output.Length, output.Length);
-                }
+                Buffer.MemoryCopy(source, destination, output.Length, output.Length);
             }
             return output;
         }
@@ -251,7 +280,7 @@ internal static unsafe class Native
 
     internal static void EnsureVersions()
     {
-        if (AbiVersion() != 1 || WireVersion() != 1)
+        if (AbiVersion() != 2 || WireVersion() != 1)
         {
             throw new DllNotFoundException("libfcp native ABI or wire version is incompatible with this .NET façade");
         }

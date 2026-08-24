@@ -221,6 +221,24 @@ JNIEXPORT void JNICALL Java_io_github_nixort_libfcp_NativeLibrary_connectionCand
     }
 }
 
+JNIEXPORT void JNICALL Java_io_github_nixort_libfcp_NativeLibrary_connectionCfrControl(
+    JNIEnv *env, jclass clazz, jlong connection, jbyteArray payload
+) {
+    (void)clazz;
+    FcpByteSlice payload_slice;
+    jbyte *payload_elements = NULL;
+    if (!borrow(env, payload, &payload_slice, &payload_elements)) {
+        return;
+    }
+    const FcpStatus status = fcp_connection_cfr_control(
+        (const FcpConnection *)from_jlong(connection), payload_slice
+    );
+    release(env, payload, payload_elements);
+    if (status != FCP_STATUS_OK) {
+        throw_status(env, status);
+    }
+}
+
 JNIEXPORT void JNICALL Java_io_github_nixort_libfcp_NativeLibrary_connectionReceive(
     JNIEnv *env, jclass clazz, jlong connection, jbyteArray envelope
 ) {
@@ -291,12 +309,26 @@ JNIEXPORT jobject JNICALL Java_io_github_nixort_libfcp_NativeLibrary_connectionT
         return NULL;
     }
     jbyteArray binding = (*env)->NewByteArray(env, FCP_WEBRTC_BINDING_BYTES);
+    jbyteArray envelope_id = (*env)->NewByteArray(env, FCP_ENVELOPE_ID_BYTES);
+    jbyteArray remote_endpoint = (*env)->NewByteArray(env, (jsize)action.remote_endpoint.len);
     jbyteArray payload = (*env)->NewByteArray(env, (jsize)action.payload.len);
     jobject result = NULL;
-    if (binding != NULL && payload != NULL) {
+    if (binding != NULL && envelope_id != NULL && remote_endpoint != NULL && payload != NULL) {
         (*env)->SetByteArrayRegion(
             env, binding, 0, FCP_WEBRTC_BINDING_BYTES, (const jbyte *)action.binding
         );
+        (*env)->SetByteArrayRegion(
+            env, envelope_id, 0, FCP_ENVELOPE_ID_BYTES, (const jbyte *)action.envelope_id
+        );
+        if (action.remote_endpoint.len != 0) {
+            (*env)->SetByteArrayRegion(
+                env,
+                remote_endpoint,
+                0,
+                (jsize)action.remote_endpoint.len,
+                (const jbyte *)action.remote_endpoint.data
+            );
+        }
         if (action.payload.len != 0) {
             (*env)->SetByteArrayRegion(
                 env, payload, 0, (jsize)action.payload.len, (const jbyte *)action.payload.data
@@ -304,7 +336,9 @@ JNIEXPORT jobject JNICALL Java_io_github_nixort_libfcp_NativeLibrary_connectionT
         }
         jclass action_class = (*env)->FindClass(env, "io/github/nixort/libfcp/Action");
         if (action_class != NULL) {
-            jmethodID constructor = (*env)->GetMethodID(env, action_class, "<init>", "(I[BII[B)V");
+            jmethodID constructor = (*env)->GetMethodID(
+                env, action_class, "<init>", "(I[BII[B[B[B)V"
+            );
             if (constructor != NULL) {
                 result = (*env)->NewObject(
                     env,
@@ -314,6 +348,8 @@ JNIEXPORT jobject JNICALL Java_io_github_nixort_libfcp_NativeLibrary_connectionT
                     binding,
                     (jint)action.sequence,
                     (jint)action.close_code,
+                    envelope_id,
+                    remote_endpoint,
                     payload
                 );
             }

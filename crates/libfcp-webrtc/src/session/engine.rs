@@ -38,8 +38,12 @@ impl SessionConfig {
 pub enum SessionEvent {
     /// The fixed FCP data channel opened after real WebRTC transport establishment.
     Connected,
-    /// Exact CFR bytes delivered from a verified FCP control envelope.
+    /// Exact CFR bytes and their verified FCP transport origin.
     DeliverCfr {
+        /// Stable ID of the signed FCP envelope carrying this payload.
+        envelope_id: libfcp_core::EnvelopeId,
+        /// Complete FCP endpoint identity that signed the carrying envelope.
+        remote_endpoint: libfcp_core::EndpointIdentity,
         /// Unmodified payload for `cfr_protocol::Conference::handle`.
         payload: Vec<u8>,
     },

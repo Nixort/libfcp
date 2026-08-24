@@ -28,7 +28,7 @@ __all__ = [
     "WIRE_VERSION",
 ]
 
-_ABI_VERSION: Final = 1
+_ABI_VERSION: Final = 2
 WIRE_VERSION: Final = 1
 _STATUS_OK: Final = 0
 _STATUS_NO_ACTION: Final = 6
@@ -65,6 +65,8 @@ class _NativeAction(_ctypes.Structure):
         ("binding", _ctypes.c_ubyte * 32),
         ("sequence", _ctypes.c_uint32),
         ("close_code", _ctypes.c_uint16),
+        ("envelope_id", _ctypes.c_ubyte * 32),
+        ("remote_endpoint", _OwnedBuffer),
         ("payload", _OwnedBuffer),
     ]
 
@@ -161,6 +163,8 @@ class Action:
     binding: bytes
     sequence: int
     close_code: int
+    envelope_id: bytes
+    remote_endpoint: bytes
     payload: bytes
 
     @property
@@ -279,6 +283,10 @@ class Connection:
                 bytes(action.binding),
                 action.sequence,
                 action.close_code,
+                bytes(action.envelope_id),
+                _ctypes.string_at(action.remote_endpoint.data, action.remote_endpoint.len)
+                if action.remote_endpoint.len
+                else b"",
                 _ctypes.string_at(action.payload.data, action.payload.len)
                 if action.payload.len
                 else b"",

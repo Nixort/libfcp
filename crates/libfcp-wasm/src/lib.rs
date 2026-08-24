@@ -16,6 +16,7 @@ use libfcp_core::{Envelope, SignedFederationConfiguration, MAX_ENVELOPE_BYTES};
 use wasm_bindgen::prelude::*;
 
 const ENDPOINT_IDENTITY_BYTES: usize = 32 + libfcp_core::ML_DSA_65_PUBLIC_KEY_BYTES;
+const ENVELOPE_ID_BYTES: usize = 32;
 const WEBRTC_BINDING_BYTES: usize = 32;
 
 mod action;
@@ -33,7 +34,7 @@ use error::{bounded, core_error};
 #[must_use]
 #[wasm_bindgen]
 pub fn abi_version() -> u32 {
-    1
+    2
 }
 
 /// Returns the FCP wire version embedded in this browser façade.

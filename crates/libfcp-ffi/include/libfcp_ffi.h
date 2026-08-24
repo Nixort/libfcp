@@ -16,11 +16,12 @@
 extern "C" {
 #endif
 
-#define FCP_FFI_ABI_VERSION 1u
+#define FCP_FFI_ABI_VERSION 2u
 #define FCP_FFI_WIRE_VERSION 1u
 #define FCP_FEDERATION_ID_BYTES 32u
 #define FCP_ATTEMPT_ID_BYTES 16u
 #define FCP_CFR_IDENTITY_BYTES 32u
+#define FCP_ENVELOPE_ID_BYTES 32u
 #define FCP_WEBRTC_BINDING_BYTES 32u
 #define FCP_ENDPOINT_IDENTITY_BYTES 1984u
 
@@ -86,6 +87,11 @@ typedef struct FcpAction {
     uint8_t binding[FCP_WEBRTC_BINDING_BYTES];
     uint32_t sequence;
     uint16_t close_code;
+    /* Signed FCP envelope identifier for FCP_ACTION_DELIVER_CFR; zero otherwise. */
+    uint8_t envelope_id[FCP_ENVELOPE_ID_BYTES];
+    /* FCP-owned remote endpoint identity for FCP_ACTION_DELIVER_CFR; empty otherwise. */
+    FcpOwnedBuffer remote_endpoint;
+    /* FCP-owned signed envelope, opaque engine bytes or exact CFR payload. */
     FcpOwnedBuffer payload;
 } FcpAction;
 
@@ -96,7 +102,7 @@ uint32_t fcp_ffi_wire_version(void);
 
 /** Releases a returned FCP buffer and resets it to an empty record. */
 void fcp_buffer_free(FcpOwnedBuffer *buffer);
-/** Releases a returned FCP action's payload and resets the action record. */
+/** Releases a returned action's endpoint and payload buffers and resets the action record. */
 void fcp_action_free(FcpAction *action);
 
 /** Generates a process-local opaque signer using OS entropy. */

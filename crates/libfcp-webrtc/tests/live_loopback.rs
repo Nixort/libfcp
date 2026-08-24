@@ -89,7 +89,11 @@ async fn two_peers_establish_real_webrtc_and_deliver_exact_cfr_control() {
             while let Some(event) = bob.try_take_event() {
                 match event {
                     SessionEvent::Connected => bob_connected = true,
-                    SessionEvent::DeliverCfr { payload: received } => return received,
+                    SessionEvent::DeliverCfr {
+                        envelope_id,
+                        remote_endpoint,
+                        payload: received,
+                    } => return (envelope_id, remote_endpoint, received),
                     SessionEvent::Closed { reason } => {
                         panic!("Bob WebRTC/FCP control channel closed early: {reason:?}")
                     }
@@ -106,7 +110,9 @@ async fn two_peers_establish_real_webrtc_and_deliver_exact_cfr_control() {
     .await
     .expect("localhost WebRTC/FCP loopback timed out");
 
-    assert_eq!(delivered, payload);
+    assert_ne!(delivered.0.as_bytes(), &[0; 32]);
+    assert_eq!(delivered.1, alice_endpoint);
+    assert_eq!(delivered.2, payload);
 
     let close = alice.begin_close(CloseCode::NORMAL).expect("close");
     bob.accept_signal(&close.encode().expect("encode close"))

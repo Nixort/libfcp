@@ -92,6 +92,8 @@ struct Action final {
     std::vector<std::uint8_t> binding;
     std::uint32_t sequence;
     std::uint16_t close_code;
+    std::vector<std::uint8_t> envelope_id;
+    std::vector<std::uint8_t> remote_endpoint;
     std::vector<std::uint8_t> payload;
 };
 
@@ -153,14 +155,19 @@ public:
             return std::nullopt;
         }
         require(status);
+        const auto remote_endpoint = copy_and_free(action.remote_endpoint);
+        action.remote_endpoint = FcpOwnedBuffer{};
+        const auto payload = copy_and_free(action.payload);
+        action.payload = FcpOwnedBuffer{};
         Action result{
             action.kind,
             std::vector<std::uint8_t>(action.binding, action.binding + FCP_WEBRTC_BINDING_BYTES),
             action.sequence,
             action.close_code,
-            copy_and_free(action.payload),
+            std::vector<std::uint8_t>(action.envelope_id, action.envelope_id + FCP_ENVELOPE_ID_BYTES),
+            remote_endpoint,
+            payload,
         };
-        action.payload = FcpOwnedBuffer{};
         fcp_action_free(&action);
         return result;
     }

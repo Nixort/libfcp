@@ -16,7 +16,7 @@ import java.util.Locale;
 
 /** Loads the reviewed platform-native FCP library and validates its ABI before use. */
 final class NativeLibrary {
-    static final int ABI_VERSION = 1;
+    static final int ABI_VERSION = 2;
     static final int WIRE_VERSION = 1;
     private static Path extractedDirectory;
 
@@ -106,6 +106,7 @@ final class NativeLibrary {
     static native void connectionBeginOffer(long connection, byte[] binding, byte[] description);
     static native void connectionAnswer(long connection, byte[] binding, byte[] description);
     static native void connectionCandidate(long connection, int sequence, byte[] candidate);
+    static native void connectionCfrControl(long connection, byte[] payload);
     static native void connectionReceive(long connection, byte[] envelope);
     static native void connectionTransportConnected(long connection);
     static native void connectionTransportFailed(long connection);

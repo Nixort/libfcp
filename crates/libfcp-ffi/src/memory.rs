@@ -43,7 +43,7 @@ pub unsafe extern "C" fn fcp_buffer_free(buffer: *mut FcpOwnedBuffer) {
     unsafe { drop(Box::from_raw(bytes)) };
 }
 
-/// Releases a returned action's owned payload and resets the whole action record.
+/// Releases a returned action's owned endpoint and payload buffers and resets the whole action record.
 ///
 /// # Safety
 /// The caller must provide a valid writable `FcpAction` record returned by FCP.
@@ -54,7 +54,9 @@ pub unsafe extern "C" fn fcp_action_free(action: *mut FcpAction) {
     }
     // SAFETY: The ABI requires a valid writable FcpAction output record.
     let action = unsafe { &mut *action };
-    // SAFETY: The payload follows the FCP-owned buffer contract.
+    // SAFETY: Both buffers follow the FCP-owned buffer contract.
+    unsafe { fcp_buffer_free(&raw mut action.remote_endpoint) };
+    // SAFETY: Both buffers follow the FCP-owned buffer contract.
     unsafe { fcp_buffer_free(&raw mut action.payload) };
     *action = FcpAction::default();
 }

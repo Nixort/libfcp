@@ -307,10 +307,18 @@ impl WebRtcRsSession {
                     self.peer.add_ice_candidate(candidate).await?;
                 }
                 Action::OpenControlChannel => {}
-                Action::DeliverCfr { payload } => {
+                Action::DeliverCfr {
+                    envelope_id,
+                    remote_endpoint,
+                    payload,
+                } => {
                     self.shared
                         .events
-                        .send(SessionEvent::DeliverCfr { payload })
+                        .send(SessionEvent::DeliverCfr {
+                            envelope_id,
+                            remote_endpoint,
+                            payload,
+                        })
                         .await
                         .map_err(|_| Error::Closed)?;
                 }

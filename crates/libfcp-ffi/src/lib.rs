@@ -11,10 +11,11 @@
 //! It validates all FFI records, copies foreign input before returning, catches
 //! Rust panics and exposes opaque handles instead of Rust layout or secrets.
 
-const ABI_VERSION: u32 = 1;
+const ABI_VERSION: u32 = 2;
 const FEDERATION_ID_BYTES: usize = 32;
 const ATTEMPT_ID_BYTES: usize = 16;
 const CFR_IDENTITY_BYTES: usize = 32;
+const ENVELOPE_ID_BYTES: usize = 32;
 const WEBRTC_BINDING_BYTES: usize = 32;
 const ENDPOINT_IDENTITY_BYTES: usize = 32 + libfcp_core::ML_DSA_65_PUBLIC_KEY_BYTES;
 

@@ -30,13 +30,24 @@ public final class Action {
     private final byte[] binding;
     private final int sequence;
     private final int closeCode;
+    private final byte[] envelopeId;
+    private final byte[] remoteEndpoint;
     private final byte[] payload;
 
-    Action(int kind, byte[] binding, int sequence, int closeCode, byte[] payload) {
+    Action(
+            int kind,
+            byte[] binding,
+            int sequence,
+            int closeCode,
+            byte[] envelopeId,
+            byte[] remoteEndpoint,
+            byte[] payload) {
         this.kind = kind;
         this.binding = binding.clone();
         this.sequence = sequence;
         this.closeCode = closeCode;
+        this.envelopeId = envelopeId.clone();
+        this.remoteEndpoint = remoteEndpoint.clone();
         this.payload = payload.clone();
     }
 
@@ -60,6 +71,16 @@ public final class Action {
         return closeCode;
     }
 
+    /** Returns the exact 32-byte verified FCP envelope ID for a CFR delivery, or zeroes otherwise. */
+    public byte[] envelopeId() {
+        return envelopeId.clone();
+    }
+
+    /** Returns the verified remote FCP endpoint identity for a CFR delivery, or an empty array otherwise. */
+    public byte[] remoteEndpoint() {
+        return remoteEndpoint.clone();
+    }
+
     /** Returns exact signed envelope, opaque engine or CFR payload bytes. */
     public byte[] payload() {
         return payload.clone();
@@ -74,6 +95,8 @@ public final class Action {
                 && sequence == action.sequence
                 && closeCode == action.closeCode
                 && Arrays.equals(binding, action.binding)
+                && Arrays.equals(envelopeId, action.envelopeId)
+                && Arrays.equals(remoteEndpoint, action.remoteEndpoint)
                 && Arrays.equals(payload, action.payload);
     }
 
@@ -83,6 +106,8 @@ public final class Action {
         result = 31 * result + Arrays.hashCode(binding);
         result = 31 * result + Integer.hashCode(sequence);
         result = 31 * result + Integer.hashCode(closeCode);
+        result = 31 * result + Arrays.hashCode(envelopeId);
+        result = 31 * result + Arrays.hashCode(remoteEndpoint);
         result = 31 * result + Arrays.hashCode(payload);
         return result;
     }

@@ -18,11 +18,19 @@ data class Action(
     val binding: ByteArray,
     val sequence: Int,
     val closeCode: Int,
+    val envelopeId: ByteArray,
+    val remoteEndpoint: ByteArray,
     val payload: ByteArray
 ) {
     companion object {
         internal fun fromJava(action: JavaAction): Action = Action(
-            action.kind(), action.binding(), action.sequence(), action.closeCode(), action.payload()
+            action.kind(),
+            action.binding(),
+            action.sequence(),
+            action.closeCode(),
+            action.envelopeId(),
+            action.remoteEndpoint(),
+            action.payload()
         )
     }
 }
@@ -58,6 +66,9 @@ class Connection(
 
     /** Queues a signed candidate envelope for the active negotiation. */
     fun addCandidate(sequence: Int, candidate: ByteArray) = delegate.addCandidate(sequence, candidate)
+
+    /** Queues exact CFR control bytes in a signed FCP envelope after transport establishment. */
+    fun cfrControl(payload: ByteArray) = delegate.cfrControl(payload)
 
     /** Verifies inbound FCP bytes and queues ordered host actions. */
     fun receive(envelope: ByteArray) = delegate.receive(envelope)

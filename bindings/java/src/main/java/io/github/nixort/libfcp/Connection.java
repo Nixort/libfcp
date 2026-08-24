@@ -48,6 +48,12 @@ public final class Connection implements AutoCloseable {
         NativeLibrary.connectionCandidate(handle, sequence, requireBytes(candidate, "candidate"));
     }
 
+    /** Queues exact CFR control bytes in a signed FCP envelope after transport establishment. */
+    public synchronized void cfrControl(byte[] payload) {
+        requireOpen();
+        NativeLibrary.connectionCfrControl(handle, requireBytes(payload, "payload"));
+    }
+
     /** Verifies a received canonical FCP envelope and queues resulting host actions. */
     public synchronized void receive(byte[] envelope) {
         requireOpen();

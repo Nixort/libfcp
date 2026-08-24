@@ -114,8 +114,20 @@ fn spawn_control_pump(shared: Arc<Shared>, channel: Arc<dyn DataChannel>) {
                     };
                     for action in actions {
                         match action {
-                            Action::DeliverCfr { payload } => {
-                                if !emit_event(&shared, SessionEvent::DeliverCfr { payload }).await
+                            Action::DeliverCfr {
+                                envelope_id,
+                                remote_endpoint,
+                                payload,
+                            } => {
+                                if !emit_event(
+                                    &shared,
+                                    SessionEvent::DeliverCfr {
+                                        envelope_id,
+                                        remote_endpoint,
+                                        payload,
+                                    },
+                                )
+                                .await
                                 {
                                     return;
                                 }
@@ -149,8 +161,20 @@ fn spawn_control_pump(shared: Arc<Shared>, channel: Arc<dyn DataChannel>) {
                     };
                     for action in actions {
                         match action {
-                            Action::DeliverCfr { payload } => {
-                                if !emit_event(&shared, SessionEvent::DeliverCfr { payload }).await
+                            Action::DeliverCfr {
+                                envelope_id,
+                                remote_endpoint,
+                                payload,
+                            } => {
+                                if !emit_event(
+                                    &shared,
+                                    SessionEvent::DeliverCfr {
+                                        envelope_id,
+                                        remote_endpoint,
+                                        payload,
+                                    },
+                                )
+                                .await
                                 {
                                     return;
                                 }

@@ -8,9 +8,9 @@
 use crate::{
     status::{status_from_core, FcpStatus},
     types::FcpOwnedBuffer,
-    WEBRTC_BINDING_BYTES,
+    ENVELOPE_ID_BYTES, WEBRTC_BINDING_BYTES,
 };
-use libfcp_core::{Action, Phase};
+use libfcp_core::{Action, EndpointIdentity, Phase};
 use std::collections::VecDeque;
 /// An action kind emitted by the signer-backed FCP connection state machine.
 pub const FCP_ACTION_SEND_ENVELOPE: u32 = 1;
@@ -39,6 +39,10 @@ pub struct FcpAction {
     pub sequence: u32,
     /// Signed application close code for close actions; zero otherwise.
     pub close_code: u16,
+    /// Signed envelope identifier for `FCP_ACTION_DELIVER_CFR`; zero otherwise.
+    pub envelope_id: [u8; ENVELOPE_ID_BYTES],
+    /// FCP-owned complete remote endpoint identity for `FCP_ACTION_DELIVER_CFR`; empty otherwise.
+    pub remote_endpoint: FcpOwnedBuffer,
     /// FCP-owned signed envelope, opaque engine bytes or exact CFR payload.
     pub payload: FcpOwnedBuffer,
 }
@@ -50,6 +54,8 @@ impl Default for FcpAction {
             binding: [0; WEBRTC_BINDING_BYTES],
             sequence: 0,
             close_code: 0,
+            envelope_id: [0; ENVELOPE_ID_BYTES],
+            remote_endpoint: FcpOwnedBuffer::default(),
             payload: FcpOwnedBuffer::default(),
         }
     }
@@ -60,6 +66,8 @@ pub(crate) struct QueuedAction {
     pub(crate) binding: [u8; WEBRTC_BINDING_BYTES],
     pub(crate) sequence: u32,
     pub(crate) close_code: u16,
+    pub(crate) envelope_id: [u8; ENVELOPE_ID_BYTES],
+    pub(crate) remote_endpoint: Option<EndpointIdentity>,
     pub(crate) payload: Vec<u8>,
 }
 
@@ -80,6 +88,8 @@ pub(crate) fn queued_action(action: Action) -> Result<QueuedAction, FcpStatus> {
             binding: [0; WEBRTC_BINDING_BYTES],
             sequence: 0,
             close_code: 0,
+            envelope_id: [0; ENVELOPE_ID_BYTES],
+            remote_endpoint: None,
             payload: envelope.encode().map_err(status_from_core)?,
         }),
         Action::ApplyOffer {
@@ -90,6 +100,8 @@ pub(crate) fn queued_action(action: Action) -> Result<QueuedAction, FcpStatus> {
             binding: *binding.as_bytes(),
             sequence: 0,
             close_code: 0,
+            envelope_id: [0; ENVELOPE_ID_BYTES],
+            remote_endpoint: None,
             payload: description,
         }),
         Action::ApplyAnswer {
@@ -100,6 +112,8 @@ pub(crate) fn queued_action(action: Action) -> Result<QueuedAction, FcpStatus> {
             binding: *binding.as_bytes(),
             sequence: 0,
             close_code: 0,
+            envelope_id: [0; ENVELOPE_ID_BYTES],
+            remote_endpoint: None,
             payload: description,
         }),
         Action::AddCandidate {
@@ -110,6 +124,8 @@ pub(crate) fn queued_action(action: Action) -> Result<QueuedAction, FcpStatus> {
             binding: [0; WEBRTC_BINDING_BYTES],
             sequence,
             close_code: 0,
+            envelope_id: [0; ENVELOPE_ID_BYTES],
+            remote_endpoint: None,
             payload: candidate,
         }),
         Action::OpenControlChannel => Ok(QueuedAction {
@@ -117,13 +133,21 @@ pub(crate) fn queued_action(action: Action) -> Result<QueuedAction, FcpStatus> {
             binding: [0; WEBRTC_BINDING_BYTES],
             sequence: 0,
             close_code: 0,
+            envelope_id: [0; ENVELOPE_ID_BYTES],
+            remote_endpoint: None,
             payload: Vec::new(),
         }),
-        Action::DeliverCfr { payload } => Ok(QueuedAction {
+        Action::DeliverCfr {
+            envelope_id,
+            remote_endpoint,
+            payload,
+        } => Ok(QueuedAction {
             kind: FCP_ACTION_DELIVER_CFR,
             binding: [0; WEBRTC_BINDING_BYTES],
             sequence: 0,
             close_code: 0,
+            envelope_id: *envelope_id.as_bytes(),
+            remote_endpoint: Some(remote_endpoint),
             payload,
         }),
         Action::CloseTransport { reason } => Ok(QueuedAction {
@@ -131,6 +155,8 @@ pub(crate) fn queued_action(action: Action) -> Result<QueuedAction, FcpStatus> {
             binding: [0; WEBRTC_BINDING_BYTES],
             sequence: 0,
             close_code: reason.as_u16(),
+            envelope_id: [0; ENVELOPE_ID_BYTES],
+            remote_endpoint: None,
             payload: Vec::new(),
         }),
     }

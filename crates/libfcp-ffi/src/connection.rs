@@ -8,11 +8,14 @@
 use crate::{
     action::{phase_code, queue_actions},
     memory::{
-        attempt_id, copy_bounded, endpoint_identity, federation_id, free_handle, lock_connection,
-        owned_buffer, required_handle, required_out, webrtc_binding,
+        attempt_id, copy_bounded, endpoint_buffer, endpoint_identity, federation_id, free_handle,
+        lock_connection, owned_buffer, required_handle, required_out, webrtc_binding,
     },
     status::{ffi_status, status_from_core, FcpStatus, FCP_STATUS_NO_ACTION},
-    types::{ConnectionState, FcpByteSlice, FcpConnection, FcpConnectionOptions, FcpSigner},
+    types::{
+        ConnectionState, FcpByteSlice, FcpConnection, FcpConnectionOptions, FcpOwnedBuffer,
+        FcpSigner,
+    },
     FcpAction,
 };
 use libfcp_core::{
@@ -273,6 +276,11 @@ pub unsafe extern "C" fn fcp_connection_take_action(
             binding: action.binding,
             sequence: action.sequence,
             close_code: action.close_code,
+            envelope_id: action.envelope_id,
+            remote_endpoint: action
+                .remote_endpoint
+                .as_ref()
+                .map_or_else(FcpOwnedBuffer::default, endpoint_buffer),
             payload: owned_buffer(action.payload),
         };
         Ok(())
