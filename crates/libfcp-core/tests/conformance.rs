@@ -120,7 +120,7 @@ fn canonical_envelope_round_trip_requires_both_signatures() {
 
 #[test]
 fn state_machine_accepts_valid_negotiation_and_deduplicates_control() {
-    let (initiator, mut responder, alice, _) = establish();
+    let (initiator, mut responder, alice, bob) = establish();
     let candidate = match initiator
         .candidate(&alice, 11, b"candidate".to_vec())
         .expect("candidate")
@@ -140,10 +140,20 @@ fn state_machine_accepts_valid_negotiation_and_deduplicates_control() {
         Action::Send(envelope) => *envelope,
         _ => panic!("control must be signaled"),
     };
-    assert!(matches!(
-        responder.receive(control.clone()),
-        Ok(actions) if matches!(actions.as_slice(), [Action::DeliverCfr { .. }])
-    ));
+    let expected_id = control.id().expect("control id");
+    let actions = responder.receive(control.clone()).expect("deliver control");
+    let [Action::DeliverCfr {
+        envelope_id,
+        remote_endpoint,
+        payload,
+    }] = actions.as_slice()
+    else {
+        panic!("control must produce one CFR delivery")
+    };
+    assert_eq!(*envelope_id, expected_id);
+    assert_eq!(*remote_endpoint, alice.endpoint());
+    assert_eq!(payload, b"exact-cfr-payload");
+    assert_ne!(*remote_endpoint, bob.endpoint());
     assert!(responder.receive(control).expect("deduplicate").is_empty());
 }
 

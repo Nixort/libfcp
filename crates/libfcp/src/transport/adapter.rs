@@ -10,7 +10,8 @@
 use alloc::boxed::Box;
 use alloc::vec::Vec;
 use libfcp_core::{
-    Action, CloseCode, Connection, ControlChannelConfig, Envelope, Error as FcpError, WebRtcBinding,
+    Action, CloseCode, Connection, ControlChannelConfig, EndpointIdentity, Envelope, EnvelopeId,
+    Error as FcpError, WebRtcBinding,
 };
 
 /// A platform adapter for one native WebRTC engine instance.
@@ -63,8 +64,12 @@ pub enum AdapterEvent {
 pub enum ApplicationAction {
     /// Send this signed FCP envelope through the chosen signaling/data path.
     Send(Box<Envelope>),
-    /// Deliver exact raw bytes into `cfr_protocol::Conference::handle`.
+    /// Deliver exact raw bytes and their verified FCP transport origin to the application bridge.
     DeliverCfr {
+        /// Stable identifier of the signed FCP envelope carrying this payload.
+        envelope_id: EnvelopeId,
+        /// Complete remote FCP endpoint identity that signed the carrying envelope.
+        remote_endpoint: EndpointIdentity,
         /// Unmodified CFR control bytes.
         payload: Vec<u8>,
     },
@@ -121,7 +126,15 @@ pub fn dispatch<A: WebRtcAdapter>(
             adapter.open_control_channel(libfcp_core::CONTROL_CHANNEL)?;
             Ok(None)
         }
-        Action::DeliverCfr { payload } => Ok(Some(ApplicationAction::DeliverCfr { payload })),
+        Action::DeliverCfr {
+            envelope_id,
+            remote_endpoint,
+            payload,
+        } => Ok(Some(ApplicationAction::DeliverCfr {
+            envelope_id,
+            remote_endpoint,
+            payload,
+        })),
         Action::CloseTransport { reason } => {
             adapter.close(reason)?;
             Ok(None)

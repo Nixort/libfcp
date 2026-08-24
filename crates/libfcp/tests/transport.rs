@@ -132,6 +132,7 @@ fn command_queue_and_events_preserve_negotiation_order_and_control_gate() {
         Action::Send(envelope) => *envelope,
         _ => panic!("control is sent"),
     };
+    let control_id = control.id().expect("control id");
     let delivered = apply_event(
         &mut remote,
         AdapterEvent::ControlBinary(control.encode().expect("encode")),
@@ -140,7 +141,9 @@ fn command_queue_and_events_preserve_negotiation_order_and_control_gate() {
     assert_eq!(
         delivered,
         vec![Action::DeliverCfr {
-            payload: b"raw-cfr".to_vec()
+            envelope_id: control_id,
+            remote_endpoint: alice.endpoint(),
+            payload: b"raw-cfr".to_vec(),
         }]
     );
 }

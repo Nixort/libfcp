@@ -72,8 +72,12 @@ pub enum Action {
     },
     /// Ask the adapter to configure/open the fixed reliable ordered FCP control channel.
     OpenControlChannel,
-    /// Deliver an exact raw CFR payload to the application bridge.
+    /// Deliver an exact raw CFR payload with its verified FCP transport origin.
     DeliverCfr {
+        /// Stable identifier of the verified signed FCP envelope carrying this payload.
+        envelope_id: EnvelopeId,
+        /// Complete FCP endpoint identity that signed the carrying envelope.
+        remote_endpoint: EndpointIdentity,
         /// Unmodified CFR wire payload.
         payload: Vec<u8>,
     },
@@ -307,6 +311,7 @@ impl Connection {
     pub fn receive(&mut self, envelope: Envelope) -> Result<Vec<Action>, Error> {
         self.validate_inbound(&envelope)?;
         let id = envelope.id()?;
+        let remote_endpoint = envelope.sender;
         if self.seen.iter().any(|known| known == &id) {
             return Ok(Vec::new());
         }
@@ -374,7 +379,11 @@ impl Connection {
                 if self.phase != Phase::Established {
                     return Err(Error::InvalidState);
                 }
-                vec![Action::DeliverCfr { payload }]
+                vec![Action::DeliverCfr {
+                    envelope_id: id,
+                    remote_endpoint,
+                    payload,
+                }]
             }
         };
         self.note_seen(id);
