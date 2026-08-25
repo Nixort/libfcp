@@ -43,7 +43,7 @@ axum = { version = "0.8.6", features = ["json", "macros"] }
 base64 = "0.22"
 bytes = "1.10"
 clap = { version = "4.5.53", features = ["derive", "env"] }
-hmac = "0.12.1"
+hmac = "0.13.0"
 idna = "=1.1.0"
 rand_core = { version = "0.6.4", features = ["getrandom"] }
 rpassword = "7.4"
