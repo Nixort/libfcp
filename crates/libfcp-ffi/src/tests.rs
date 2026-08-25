@@ -127,7 +127,10 @@ fn copy_buffer(buffer: &FcpOwnedBuffer) -> Vec<u8> {
     unsafe { slice::from_raw_parts(buffer.data, buffer.len) }.to_vec()
 }
 
+// The test intentionally keeps the native state-machine exchange linear so every
+// FFI ownership transition and action ordering assertion remains reviewable.
 #[test]
+#[allow(clippy::too_many_lines)]
 fn cfr_delivery_copies_verified_origin_into_ffi_action() {
     let mut alice = generated_signer();
     let mut bob = generated_signer();

@@ -147,7 +147,7 @@ pub(crate) fn queued_action(action: Action) -> Result<QueuedAction, FcpStatus> {
             sequence: 0,
             close_code: 0,
             envelope_id: *envelope_id.as_bytes(),
-            remote_endpoint: Some(remote_endpoint),
+            remote_endpoint: Some(*remote_endpoint),
             payload,
         }),
         Action::CloseTransport { reason } => Ok(QueuedAction {

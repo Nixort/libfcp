@@ -151,9 +151,9 @@ fn state_machine_accepts_valid_negotiation_and_deduplicates_control() {
         panic!("control must produce one CFR delivery")
     };
     assert_eq!(*envelope_id, expected_id);
-    assert_eq!(*remote_endpoint, alice.endpoint());
+    assert_eq!(**remote_endpoint, alice.endpoint());
     assert_eq!(payload, b"exact-cfr-payload");
-    assert_ne!(*remote_endpoint, bob.endpoint());
+    assert_ne!(**remote_endpoint, bob.endpoint());
     assert!(responder.receive(control).expect("deduplicate").is_empty());
 }
 

@@ -77,7 +77,7 @@ pub enum Action {
         /// Stable identifier of the verified signed FCP envelope carrying this payload.
         envelope_id: EnvelopeId,
         /// Complete FCP endpoint identity that signed the carrying envelope.
-        remote_endpoint: EndpointIdentity,
+        remote_endpoint: Box<EndpointIdentity>,
         /// Unmodified CFR wire payload.
         payload: Vec<u8>,
     },
@@ -381,7 +381,7 @@ impl Connection {
                 }
                 vec![Action::DeliverCfr {
                     envelope_id: id,
-                    remote_endpoint,
+                    remote_endpoint: Box::new(remote_endpoint),
                     payload,
                 }]
             }

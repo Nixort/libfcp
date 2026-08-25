@@ -38,7 +38,7 @@ fn wasm_action_preserves_verified_cfr_origin() {
     );
     let action = convert_action(Action::DeliverCfr {
         envelope_id: EnvelopeId::from_bytes([7; 32]),
-        remote_endpoint: endpoint,
+        remote_endpoint: Box::new(endpoint),
         payload: b"exact-wasm-cfr".to_vec(),
     })
     .expect("convert CFR action");

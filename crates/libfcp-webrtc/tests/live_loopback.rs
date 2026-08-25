@@ -111,7 +111,7 @@ async fn two_peers_establish_real_webrtc_and_deliver_exact_cfr_control() {
     .expect("localhost WebRTC/FCP loopback timed out");
 
     assert_ne!(delivered.0.as_bytes(), &[0; 32]);
-    assert_eq!(delivered.1, alice_endpoint);
+    assert_eq!(*delivered.1, alice_endpoint);
     assert_eq!(delivered.2, payload);
 
     let close = alice.begin_close(CloseCode::NORMAL).expect("close");

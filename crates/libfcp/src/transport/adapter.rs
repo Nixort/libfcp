@@ -69,7 +69,7 @@ pub enum ApplicationAction {
         /// Stable identifier of the signed FCP envelope carrying this payload.
         envelope_id: EnvelopeId,
         /// Complete remote FCP endpoint identity that signed the carrying envelope.
-        remote_endpoint: EndpointIdentity,
+        remote_endpoint: Box<EndpointIdentity>,
         /// Unmodified CFR control bytes.
         payload: Vec<u8>,
     },

@@ -142,7 +142,7 @@ fn command_queue_and_events_preserve_negotiation_order_and_control_gate() {
         delivered,
         vec![Action::DeliverCfr {
             envelope_id: control_id,
-            remote_endpoint: alice.endpoint(),
+            remote_endpoint: Box::new(alice.endpoint()),
             payload: b"raw-cfr".to_vec(),
         }]
     );

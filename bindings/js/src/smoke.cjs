@@ -17,7 +17,7 @@ if (!packageDirectory) {
 
 const fcp = require(path.join(packageDirectory, 'libfcp_wasm.js'));
 
-assert.equal(fcp.abi_version(), 1);
+assert.equal(fcp.abi_version(), 2);
 assert.equal(fcp.wire_version(), 1);
 
 const local = new fcp.Signer();

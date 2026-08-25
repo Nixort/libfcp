@@ -89,7 +89,7 @@ impl FcpAction {
     }
 }
 
-fn endpoint_bytes(endpoint: libfcp_core::EndpointIdentity) -> Vec<u8> {
+fn endpoint_bytes(endpoint: &libfcp_core::EndpointIdentity) -> Vec<u8> {
     let mut bytes = Vec::with_capacity(crate::ENDPOINT_IDENTITY_BYTES);
     bytes.extend_from_slice(endpoint.classical.as_bytes());
     bytes.extend_from_slice(&endpoint.post_quantum);
@@ -162,7 +162,7 @@ pub(crate) fn convert_action(action: Action) -> Result<FcpAction, JsError> {
             sequence: 0,
             close_code: 0,
             envelope_id: envelope_id.as_bytes().to_vec(),
-            remote_endpoint: endpoint_bytes(remote_endpoint),
+            remote_endpoint: endpoint_bytes(&remote_endpoint),
             payload,
         }),
         Action::CloseTransport { reason } => Ok(FcpAction {
