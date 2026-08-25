@@ -60,16 +60,16 @@ jobs:
         env:
           CONFIRMATION: ${{ inputs.confirmation }}
         run: test "$CONFIRMATION" = "PUBLISH-LIBFCP"
-      - name: Validate crates.io token without publication
+      - name: Validate crates.io token injection without publication
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
         run: |
           test -n "$CARGO_REGISTRY_TOKEN"
-          curl --fail --silent --show-error \
-            --header 'Accept: application/json' \
-            --header 'User-Agent: libfcp-release-validation/1.0 (https://github.com/Nixort/libfcp)' \
-            --header "Authorization: $CARGO_REGISTRY_TOKEN" \
-            https://crates.io/api/v1/me >/dev/null
+          cargo login --registry crates-io "$CARGO_REGISTRY_TOKEN"
+          test -s "$CARGO_HOME/credentials.toml"
+          # Scoped publish tokens intentionally cannot call read endpoints such
+          # as /me. The first network validation therefore remains cargo publish,
+          # which is available only through operation=publish and confirmation.
       - name: Run release quality gate
         run: |
           cargo fmt --all -- --check
