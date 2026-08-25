@@ -44,7 +44,7 @@ jobs:
       # actions/checkout v5, pinned by immutable commit SHA.
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
         with:
-          ref: ${{ github.event.release.tag_name }}
+          ref: ${{ github.event_name == 'release' && github.event.release.tag_name || github.ref }}
       # actions/setup-node v5, pinned by immutable commit SHA.
       - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
         with:
@@ -70,17 +70,39 @@ jobs:
             test "$GITHUB_REF_NAME" = "main"
           fi
           ./scripts/test_js_npm_package.sh
+      - name: Detect existing GitHub Packages version
+        id: package_version
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          package_name="$(node -p "require('./bindings/js/package.json').name")"
+          package_version="$(node -p "require('./bindings/js/package.json').version")"
+          set +e
+          response="$(npm view "$package_name@$package_version" version --registry=https://npm.pkg.github.com 2>&1)"
+          status=$?
+          set -e
+          if [ "$status" -eq 0 ]; then
+            test "$response" = "$package_version"
+            printf '%s\n' 'already_published=true' >> "$GITHUB_OUTPUT"
+          elif printf '%s\n' "$response" | grep -qE 'E404|404 Not Found'; then
+            printf '%s\n' 'already_published=false' >> "$GITHUB_OUTPUT"
+          else
+            printf '%s\n' "$response" >&2
+            exit "$status"
+          fi
       - name: Build npm package
         run: |
           LIBFCP_NPM_PACKAGE_DIR="$GITHUB_WORKSPACE/dist/npm" \
             ./scripts/package_js_npm.sh
       - name: Publish to GitHub Packages
+        if: steps.package_version.outputs.already_published != 'true'
         working-directory: dist/npm/package
         run: npm publish --registry=https://npm.pkg.github.com
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # actions/attest v4, pinned by immutable commit SHA.
       - name: Attest published tarball
+        if: steps.package_version.outputs.already_published != 'true'
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
         with:
           subject-path: dist/npm/tarballs/*.tgz
