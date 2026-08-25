@@ -11,7 +11,7 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-version="1.0.0-rc.1"
+version="$($repo_root/scripts/release_metadata.sh version)"
 group_path="io/github/nixort"
 artifact_id="libfcp"
 output_root="${LIBFCP_JVM_PACKAGE_DIR:-$repo_root/build/jvm-package}"

@@ -91,6 +91,7 @@ jobs:
           LIBFCP_JVM_SIGN: "1"
           LIBFCP_JVM_GPG_PASSPHRASE: ${{ secrets.MAVEN_CENTRAL_GPG_PASSPHRASE }}
         run: |
+          ./scripts/test_release_metadata_contract.sh
           ./scripts/test_jvm_maven_package.sh
       - name: Build signed Central bundle
         env:

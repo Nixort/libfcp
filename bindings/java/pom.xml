@@ -37,7 +37,7 @@
     <connection>scm:git:https://github.com/Nixort/libfcp.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/Nixort/libfcp.git</developerConnection>
     <url>https://github.com/Nixort/libfcp</url>
-    <tag>HEAD</tag>
+    <tag>v${project.version}</tag>
   </scm>
 
   <distributionManagement>

@@ -11,7 +11,7 @@ repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 package_root="$(mktemp -d "${TMPDIR:-/tmp}/libfcp-jvm-package.XXXXXX")"
 trap 'rm -rf "$package_root"' EXIT
 java_home="${JAVA_HOME:-$(dirname "$(dirname "$(readlink -f "$(command -v javac)")")")}"
-version="1.0.0-rc.1"
+version="$($repo_root/scripts/release_metadata.sh version)"
 artifact_directory="$package_root/maven-repository/io/github/nixort/libfcp/$version"
 central_directory="$package_root/central-staging/io/github/nixort/libfcp/$version"
 central_bundle="$package_root/libfcp-$version-central-bundle.zip"
@@ -21,10 +21,17 @@ for artifact in \
     "libfcp-$version.jar" \
     "libfcp-$version-sources.jar" \
     "libfcp-$version-javadoc.jar" \
-    "libfcp-$version-linux-x86_64.jar" \
     "libfcp-$version.pom" \
     SHA256SUMS; do
     test -f "$artifact_directory/$artifact"
+done
+
+classifiers=(linux-x86_64)
+if [[ -n "${LIBFCP_JVM_PREBUILT_CLASSIFIERS_DIR:-}" ]]; then
+    classifiers=(linux-x86_64 macos-x86_64 macos-aarch64)
+fi
+for classifier in "${classifiers[@]}"; do
+    test -f "$artifact_directory/libfcp-$version-$classifier.jar"
 done
 (
     cd "$artifact_directory"
@@ -42,7 +49,9 @@ for artifact in "$central_directory"/*.jar "$central_directory"/*.pom; do
 done
 unzip -t "$central_bundle" >/dev/null
 unzip -Z1 "$central_bundle" | grep -Fx "io/github/nixort/libfcp/$version/libfcp-$version.pom" >/dev/null
-unzip -Z1 "$central_bundle" | grep -Fx "io/github/nixort/libfcp/$version/libfcp-$version-linux-x86_64.jar" >/dev/null
+for classifier in "${classifiers[@]}"; do
+    unzip -Z1 "$central_bundle" | grep -Fx "io/github/nixort/libfcp/$version/libfcp-$version-$classifier.jar" >/dev/null
+done
 
 consumer="$repo_root/bindings/java/consumer-smoke"
 classpath="$package_root/consumer-classpath.txt"

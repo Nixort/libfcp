@@ -1,0 +1,88 @@
+# Copyright Nixort <https://github.com/Nixort> 2026.
+#
+# License: GNU General Public License v3.0 only.
+# You can find the license file in the project root.
+#
+# Federated CFR Connect Protocol (FCP).
+#
+# This workflow validates and attests GitHub Release assets. Maven Central
+# deployment bundles are intentionally excluded and are produced only by the
+# protected signed Central publication workflow.
+name: libfcp GitHub Release assets
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/github-release-assets.yml
+      - bindings/js/**
+      - crates/libfcp-ffi/**
+      - crates/libfcp-wasm/**
+      - scripts/package_github_release_assets.sh
+      - scripts/package_js_npm.sh
+      - scripts/package_native_binding_bundle.sh
+      - scripts/release_metadata.sh
+      - scripts/test_github_release_assets.sh
+      - Cargo.lock
+      - Cargo.toml
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/github-release-assets.yml
+      - bindings/js/**
+      - crates/libfcp-ffi/**
+      - crates/libfcp-wasm/**
+      - scripts/package_github_release_assets.sh
+      - scripts/package_js_npm.sh
+      - scripts/package_native_binding_bundle.sh
+      - scripts/release_metadata.sh
+      - scripts/test_github_release_assets.sh
+      - Cargo.lock
+      - Cargo.toml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  attestations: write
+  id-token: write
+
+concurrency:
+  group: libfcp-github-release-assets-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  package:
+    name: Build and verify GitHub Release assets
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      # actions/checkout v5, pinned by immutable commit SHA.
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      # actions/setup-node v5, pinned by immutable commit SHA.
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+        with:
+          node-version: "22.14.0"
+      # dtolnay/rust-toolchain, pinned by immutable commit SHA.
+      - uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772
+        with:
+          toolchain: stable
+          targets: wasm32-unknown-unknown
+      - name: Install matching wasm-bindgen CLI
+        run: cargo install wasm-bindgen-cli --version 0.2.117 --locked
+      - name: Build and verify release assets
+        run: |
+          LIBFCP_GITHUB_RELEASE_ASSETS_DIR="$GITHUB_WORKSPACE/dist/github-release-assets" \
+            ./scripts/test_github_release_assets.sh
+      # actions/upload-artifact v4.6.2, pinned by immutable commit SHA.
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: libfcp-github-release-assets
+          path: dist/github-release-assets
+          if-no-files-found: error
+      # actions/attest v4, pinned by immutable commit SHA. Attest only trusted
+      # main builds; pull requests validate the exact same contract without
+      # receiving an externally verifiable provenance statement.
+      - name: Attest verified GitHub Release assets
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
+        with:
+          subject-path: dist/github-release-assets/*

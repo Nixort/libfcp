@@ -62,11 +62,22 @@ The façade must never accept a password, recovery code, database URL, cloud cre
 | Stateful interoperability | Rust FFI, C, C++, Python, Java, Kotlin, JS/WASM, C# and Go exercise an ordered offer/action lifecycle | Add independent two-runtime, replay and close-lifecycle scenarios per target. |
 | Native lifecycle | Idempotent close APIs and local create/use/close smoke tests | Add sanitizers, memory-leak checks and stress/concurrency tests by target. |
 | Platform transport | Correct FCP action contract is exposed | Run real Android, Apple and browser WebRTC engine tests; Node is not a browser transport test. |
-| Publication integrity | Source remains secrets-free; JVM local package emits SHA-256 checksums, CI attests trusted `main` artifacts and the JavaScript RC is published to GitHub Packages through an explicitly confirmed workflow | Add an SBOM and any separately approved public npmjs trusted-publisher release. |
+| Publication integrity | Source remains secrets-free; CI attests trusted `main` artifacts, generates SPDX SBOMs and attaches a release SBOM on publication; the JavaScript RC is published to GitHub Packages through an explicitly confirmed workflow | Add any separately approved public npmjs trusted-publisher release. |
 
 ## Packaging and release boundaries
 
 A final package release remains a separate controlled operation. Native target artifacts are unavoidable even though the protocol code is single-source Rust: JVM, CPython, .NET, Go/cgo and C/C++ must load a platform binary, while the browser loads a WASM module. This is packaging, not a second FCP implementation.
+
+### Public release asset matrix
+
+| Delivery channel | Delivered artifact | Supported runtime or platform | Explicitly not implied |
+|---|---|---|---|
+| GitHub Packages | `@nixort/libfcp` Node-compatible WASM package | Node.js 18+ and browser bundlers that support the generated `wasm-bindgen` package contract | npmjs publication, a browser WebRTC transport certification, or an independent browser matrix |
+| GitHub Release | `libfcp-wasm-<version>.tgz` | Same WASM package as GitHub Packages | Maven Central deployment artifact or native binary |
+| GitHub Release | `libfcp-native-bindings-linux-x86_64-<version>.tar.gz` | Linux x86_64 C ABI shared library plus C++, Python, C# and Go source façades | Windows, macOS, Linux ARM64, PyPI, NuGet, or Go registry package support |
+| Maven Central | `io.github.nixort:libfcp:<version>` with JNI classifiers | Linux x86_64, macOS x86_64 and macOS aarch64 after the protected signed publication workflow validates the complete matrix | A GitHub Release ZIP, Windows, Linux ARM64, Android, or a non-JVM native package |
+
+A Maven Central bundle is never attached as a generic GitHub Release asset. It is assembled only by the protected Central workflow from verified classifiers for the same tag and signed immediately before upload.
 
 | Family | Intended prerelease coordinate/artifact | Release host and required gate |
 |---|---|---|
@@ -78,7 +89,7 @@ A final package release remains a separate controlled operation. Native target a
 | C# | `Nixort.LibFcp` prerelease | .NET source façade is included in Linux artifact bundle; add NuGet RID native assets and packaging/consumer gates |
 | Go | module release with declared cgo target support | Go source façade is included in Linux artifact bundle; add Go release builds and declared cgo target matrix |
 
-Run `./scripts/test_jvm_maven_package.sh` to build an isolated local repository, verify all Central digest files and the deployment bundle, resolve it from a clean Maven cache and execute Java plus Kotlin consumer smoke tests. Run `./scripts/package_jvm_native_classifier.sh` only on the matching Linux or macOS host to create one native classifier JAR. Run `./scripts/test_js_npm_package.sh` to build an npm tarball, verify its checksum, install it into a clean Node consumer and execute the WASM API smoke test. The GitHub `libfcp JVM prerelease`, `libfcp npm prerelease` and `libfcp native bindings prerelease` workflows repeat those gates, upload short-retention artifacts, and attest only trusted `main` builds.
+Run `./scripts/test_jvm_maven_package.sh` to build an isolated local repository, verify Central digest files and the deployment bundle, resolve it from a clean Maven cache and execute Java plus Kotlin consumer smoke tests. When CI supplies the complete verified classifier set, the same gate requires all declared Linux and macOS classifier JARs. Run `./scripts/package_jvm_native_classifier.sh` only on the matching Linux or macOS host to create one native classifier JAR. Run `./scripts/test_js_npm_package.sh` to build an npm tarball, verify its checksum, install it into a clean Node consumer and execute the WASM API smoke test. The GitHub `libfcp JVM prerelease`, `libfcp npm prerelease` and `libfcp native bindings prerelease` workflows repeat those gates, upload short-retention artifacts, and attest only trusted `main` builds.
 
 `@nixort/libfcp` defaults to the repository-linked GitHub Packages registry, preventing an accidental npmjs upload. The `v1.0.0-rc.1` GitHub Packages RC was published through the separate `libfcp npm GitHub Packages release` workflow after an explicit `workflow_dispatch` confirmation from `main`; its package gates, job-scoped `packages: write` token and provenance attestation completed successfully. The same workflow also supports a matching GitHub prerelease event, but the published RC does not require a Git tag or GitHub Release. A public npmjs release is intentionally not configured: it needs an npm package record and a separately approved OIDC trusted-publisher relationship before it may be added.[8] [9]
 

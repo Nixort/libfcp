@@ -56,6 +56,7 @@ jobs:
         run: |
           cargo fmt --all -- --check
           ./scripts/test_cross_platform_publication_contract.sh
+          ./scripts/test_release_metadata_contract.sh
           cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
           cargo test --workspace --all-features --locked
           cargo build --release --workspace --locked

@@ -38,6 +38,8 @@ jobs:
         run: cargo fmt --all -- --check
       - name: Verify cross-platform publication contract
         run: ./scripts/test_cross_platform_publication_contract.sh
+      - name: Verify release metadata contract
+        run: ./scripts/test_release_metadata_contract.sh
       - name: Test Rust 1.85 portable crates
         run: |
           cargo test \

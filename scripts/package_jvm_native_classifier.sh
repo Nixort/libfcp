@@ -11,7 +11,7 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-version="1.0.0-rc.1"
+version="$($repo_root/scripts/release_metadata.sh version)"
 artifact_id="libfcp"
 classifier="${LIBFCP_JVM_NATIVE_CLASSIFIER:?LIBFCP_JVM_NATIVE_CLASSIFIER is required}"
 output_root="${LIBFCP_JVM_NATIVE_CLASSIFIER_DIR:-$repo_root/build/jvm-native-classifier}"

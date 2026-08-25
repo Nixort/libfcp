@@ -8,10 +8,11 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+version="$($repo_root/scripts/release_metadata.sh version)"
 output_root="${LIBFCP_NATIVE_BINDING_PACKAGE_DIR:-$repo_root/build/native-bindings}"
 cargo_target="${LIBFCP_NATIVE_BINDING_CARGO_TARGET:-$output_root/cargo-target}"
 bundle_root="$output_root/libfcp-native-bindings-linux-x86_64"
-tarball="$output_root/libfcp-native-bindings-linux-x86_64-1.0.0-rc.1.tar.gz"
+tarball="$output_root/libfcp-native-bindings-linux-x86_64-$version.tar.gz"
 
 for command in cargo cp tar sha256sum; do
     command -v "$command" >/dev/null 2>&1 || {
