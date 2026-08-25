@@ -18,6 +18,7 @@ readonly JVM_CLASSIFIER="$ROOT/scripts/package_jvm_native_classifier.sh"
 readonly JVM_WORKFLOW="$ROOT/.github/workflows/jvm-prerelease.yml"
 readonly JVM_CENTRAL_WORKFLOW="$ROOT/.github/workflows/maven-central-release.yml"
 readonly JVM_CLASSIFIER_WORKFLOW="$ROOT/.github/workflows/jvm-native-classifiers.yml"
+readonly RUST_RELEASE_WORKFLOW="$ROOT/.github/workflows/release.yml"
 readonly NPM_MANIFEST="$ROOT/bindings/js/package.json"
 readonly NPM_PACKAGE="$ROOT/scripts/package_js_npm.sh"
 readonly NPM_GATE="$ROOT/scripts/test_js_npm_package.sh"
@@ -46,6 +47,7 @@ require() {
 [[ -f "$JVM_WORKFLOW" ]] || fail 'missing JVM prerelease workflow'
 [[ -f "$JVM_CENTRAL_WORKFLOW" ]] || fail 'missing Maven Central release workflow'
 [[ -f "$JVM_CLASSIFIER_WORKFLOW" ]] || fail 'missing JVM classifier workflow'
+[[ -f "$RUST_RELEASE_WORKFLOW" ]] || fail 'missing crates.io release workflow'
 [[ -f "$NPM_MANIFEST" ]] || fail 'missing npm manifest'
 [[ -x "$NPM_PACKAGE" ]] || fail 'missing executable npm package builder'
 [[ -x "$NPM_GATE" ]] || fail 'missing executable npm consumer gate'
@@ -83,9 +85,17 @@ require 'linux-x86_64' "$JVM_CLASSIFIER"
 require 'macos-aarch64' "$JVM_CLASSIFIER"
 require 'Central bundle and consumer verification passed' "$JVM_GATE"
 require 'PUBLISH-MAVEN-CENTRAL' "$JVM_CENTRAL_WORKFLOW"
+require 'Verify versioned release tag' "$JVM_CENTRAL_WORKFLOW"
+require 'Download verified native classifier artifacts' "$JVM_CENTRAL_WORKFLOW"
+require 'jvm-native-classifiers.yml' "$JVM_CENTRAL_WORKFLOW"
+require 'LIBFCP_JVM_PREBUILT_CLASSIFIERS_DIR' "$JVM_CENTRAL_WORKFLOW"
 require 'MAVEN_CENTRAL_USERNAME' "$JVM_CENTRAL_WORKFLOW"
 require 'macos-x86_64' "$JVM_CLASSIFIER_WORKFLOW"
+require 'macos-15-intel' "$JVM_CLASSIFIER_WORKFLOW"
 require 'macos-aarch64' "$JVM_CLASSIFIER_WORKFLOW"
+require 'PUBLISH-LIBFCP' "$RUST_RELEASE_WORKFLOW"
+require 'Verify versioned release tag' "$RUST_RELEASE_WORKFLOW"
+require 'all-features' "$RUST_RELEASE_WORKFLOW"
 require 'This workflow validates and attaches prerelease artifacts. It never publishes' "$JVM_WORKFLOW"
 require 'actions/attest@' "$JVM_WORKFLOW"
 require '@nixort/libfcp' "$NPM_MANIFEST"

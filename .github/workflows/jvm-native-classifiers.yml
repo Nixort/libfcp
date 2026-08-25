@@ -56,7 +56,7 @@ jobs:
         include:
           - runner: ubuntu-24.04
             classifier: linux-x86_64
-          - runner: macos-13
+          - runner: macos-15-intel
             classifier: macos-x86_64
           - runner: macos-14
             classifier: macos-aarch64

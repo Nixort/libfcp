@@ -19,6 +19,7 @@ on:
         type: string
 
 permissions:
+  actions: read
   contents: read
 
 concurrency:
@@ -34,6 +35,16 @@ jobs:
     steps:
       # actions/checkout v5, pinned by immutable commit SHA.
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          fetch-depth: 0
+      - name: Verify versioned release tag
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          release_version="$(sed -nE 's/^version = "([^"]+)"/\1/p' Cargo.toml | head -n 1)"
+          test -n "$release_version"
+          test "$RELEASE_TAG" = "v$release_version"
+          test "$(git describe --tags --exact-match HEAD)" = "$RELEASE_TAG"
       # actions/setup-java v5, pinned by immutable commit SHA.
       - uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165
         with:
@@ -47,6 +58,27 @@ jobs:
         env:
           CONFIRMATION: ${{ inputs.confirmation }}
         run: test "$CONFIRMATION" = "PUBLISH-MAVEN-CENTRAL"
+      - name: Download verified native classifier artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          classifier_run_id="$(gh run list \
+            --repo "$GITHUB_REPOSITORY" \
+            --workflow jvm-native-classifiers.yml \
+            --commit "$GITHUB_SHA" \
+            --status success \
+            --limit 1 \
+            --json databaseId \
+            --jq '.[0].databaseId')"
+          test -n "$classifier_run_id"
+          mkdir -p native-classifiers
+          for classifier in linux-x86_64 macos-x86_64 macos-aarch64; do
+            gh run download "$classifier_run_id" \
+              --repo "$GITHUB_REPOSITORY" \
+              --name "libfcp-jvm-native-$classifier" \
+              --dir native-classifiers
+            test -f "native-classifiers/libfcp-1.0.0-rc.1-$classifier.jar"
+          done
       - name: Install Kotlin compiler
         run: sudo apt-get update -qq && sudo apt-get install -y -qq kotlin
       - name: Import Maven Central signing key
@@ -55,6 +87,7 @@ jobs:
         run: printf '%s' "$GPG_PRIVATE_KEY" | base64 --decode | gpg --batch --import
       - name: Verify signed package and clean consumer
         env:
+          LIBFCP_JVM_PREBUILT_CLASSIFIERS_DIR: ${{ github.workspace }}/native-classifiers
           LIBFCP_JVM_SIGN: "1"
           LIBFCP_JVM_GPG_PASSPHRASE: ${{ secrets.MAVEN_CENTRAL_GPG_PASSPHRASE }}
         run: |
