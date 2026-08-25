@@ -1,0 +1,62 @@
+# Copyright Nixort <https://github.com/Nixort> 2026.
+#
+# License: GNU General Public License v3.0 only.
+# You can find the license file in the project root.
+#
+# Federated CFR Connect Protocol (FCP).
+name: libfcp SBOM
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: libfcp-sbom-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  source:
+    name: Generate source SPDX SBOM
+    if: github.event_name != 'release'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      # actions/checkout v5, pinned by immutable commit SHA.
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      # anchore/sbom-action v0.24.0, pinned by immutable commit SHA.
+      - uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610
+        with:
+          path: .
+          format: spdx-json
+          artifact-name: libfcp-source.spdx.json
+          dependency-snapshot: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          upload-release-assets: false
+
+  release:
+    name: Attach source SPDX SBOM to GitHub Release
+    if: github.event_name == 'release'
+    permissions:
+      actions: read
+      contents: write
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      # actions/checkout v5, pinned by immutable commit SHA.
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: ${{ github.event.release.tag_name }}
+      # anchore/sbom-action v0.24.0, pinned by immutable commit SHA.
+      - uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610
+        with:
+          path: .
+          format: spdx-json
+          artifact-name: libfcp-${{ github.event.release.tag_name }}.spdx.json
+          dependency-snapshot: false
+          upload-release-assets: true

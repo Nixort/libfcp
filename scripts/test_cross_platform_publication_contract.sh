@@ -19,6 +19,13 @@ readonly JVM_WORKFLOW="$ROOT/.github/workflows/jvm-prerelease.yml"
 readonly JVM_CENTRAL_WORKFLOW="$ROOT/.github/workflows/maven-central-release.yml"
 readonly JVM_CLASSIFIER_WORKFLOW="$ROOT/.github/workflows/jvm-native-classifiers.yml"
 readonly RUST_RELEASE_WORKFLOW="$ROOT/.github/workflows/release.yml"
+readonly RELEASE_METADATA="$ROOT/scripts/release_metadata.sh"
+readonly RELEASE_METADATA_GATE="$ROOT/scripts/test_release_metadata_contract.sh"
+readonly GITHUB_RELEASE_ASSETS="$ROOT/scripts/package_github_release_assets.sh"
+readonly SBOM_WORKFLOW="$ROOT/.github/workflows/sbom.yml"
+readonly GITHUB_RELEASE_ASSETS_WORKFLOW="$ROOT/.github/workflows/github-release-assets.yml"
+readonly GITHUB_RELEASE_ASSETS_GATE="$ROOT/scripts/test_github_release_assets.sh"
+readonly DEPENDABOT="$ROOT/.github/dependabot.yml"
 readonly NPM_MANIFEST="$ROOT/bindings/js/package.json"
 readonly NPM_PACKAGE="$ROOT/scripts/package_js_npm.sh"
 readonly NPM_GATE="$ROOT/scripts/test_js_npm_package.sh"
@@ -48,6 +55,13 @@ require() {
 [[ -f "$JVM_CENTRAL_WORKFLOW" ]] || fail 'missing Maven Central release workflow'
 [[ -f "$JVM_CLASSIFIER_WORKFLOW" ]] || fail 'missing JVM classifier workflow'
 [[ -f "$RUST_RELEASE_WORKFLOW" ]] || fail 'missing crates.io release workflow'
+[[ -x "$RELEASE_METADATA" ]] || fail 'missing executable release metadata helper'
+[[ -x "$RELEASE_METADATA_GATE" ]] || fail 'missing executable release metadata contract gate'
+[[ -x "$GITHUB_RELEASE_ASSETS" ]] || fail 'missing executable GitHub Release asset builder'
+[[ -f "$SBOM_WORKFLOW" ]] || fail 'missing SBOM workflow'
+[[ -f "$GITHUB_RELEASE_ASSETS_WORKFLOW" ]] || fail 'missing GitHub Release asset workflow'
+[[ -x "$GITHUB_RELEASE_ASSETS_GATE" ]] || fail 'missing executable GitHub Release asset gate'
+[[ -f "$DEPENDABOT" ]] || fail 'missing Dependabot policy'
 [[ -f "$NPM_MANIFEST" ]] || fail 'missing npm manifest'
 [[ -x "$NPM_PACKAGE" ]] || fail 'missing executable npm package builder'
 [[ -x "$NPM_GATE" ]] || fail 'missing executable npm consumer gate'
@@ -79,6 +93,7 @@ require '<version>1.0.0-rc.1</version>' "$JVM_POM"
 require 'kotlin-stdlib' "$JVM_POM"
 require 'central-publishing-maven-plugin' "$JVM_POM"
 require '<distributionManagement>' "$JVM_POM"
+require '<tag>v${project.version}</tag>' "$JVM_POM"
 require 'central-staging' "$JVM_PACKAGE"
 require 'LIBFCP_JVM_PREBUILT_CLASSIFIERS_DIR' "$JVM_PACKAGE"
 require 'linux-x86_64' "$JVM_CLASSIFIER"
@@ -93,6 +108,18 @@ require 'MAVEN_CENTRAL_USERNAME' "$JVM_CENTRAL_WORKFLOW"
 require 'macos-x86_64' "$JVM_CLASSIFIER_WORKFLOW"
 require 'macos-15-intel' "$JVM_CLASSIFIER_WORKFLOW"
 require 'macos-aarch64' "$JVM_CLASSIFIER_WORKFLOW"
+require 'test_release_metadata_contract.sh' "$JVM_CENTRAL_WORKFLOW"
+require 'test_release_metadata_contract.sh' "$RUST_RELEASE_WORKFLOW"
+require 'Maven Central bundles are produced only by the protected signed publication workflow.' "$GITHUB_RELEASE_ASSETS"
+require 'anchore/sbom-action@' "$SBOM_WORKFLOW"
+require 'spdx-json' "$SBOM_WORKFLOW"
+require 'upload-release-assets: true' "$SBOM_WORKFLOW"
+require 'Build and verify GitHub Release assets' "$GITHUB_RELEASE_ASSETS_WORKFLOW"
+require 'test_github_release_assets.sh' "$GITHUB_RELEASE_ASSETS_WORKFLOW"
+require 'actions/attest@' "$GITHUB_RELEASE_ASSETS_WORKFLOW"
+require 'package-ecosystem: github-actions' "$DEPENDABOT"
+require 'package-ecosystem: cargo' "$DEPENDABOT"
+require 'package-ecosystem: maven' "$DEPENDABOT"
 require 'PUBLISH-LIBFCP' "$RUST_RELEASE_WORKFLOW"
 require 'Verify versioned release tag' "$RUST_RELEASE_WORKFLOW"
 require 'all-features' "$RUST_RELEASE_WORKFLOW"
@@ -127,5 +154,10 @@ if [[ -n "$legacy_matches" ]]; then
   fail 'legacy release-candidate path remains'
 fi
 
-bash -n "$JVM_PACKAGE" "$JVM_GATE" "$JVM_CLASSIFIER" "$NPM_PACKAGE" "$NPM_GATE" "$NATIVE_BUNDLE"
+bash -n \
+  "$JVM_PACKAGE" "$JVM_GATE" "$JVM_CLASSIFIER" \
+  "$NPM_PACKAGE" "$NPM_GATE" "$NATIVE_BUNDLE" \
+  "$RELEASE_METADATA" "$RELEASE_METADATA_GATE" "$GITHUB_RELEASE_ASSETS" \
+  "$GITHUB_RELEASE_ASSETS_GATE"
+"$RELEASE_METADATA_GATE"
 printf 'cross-platform publication contract passed.\n'
