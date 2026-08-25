@@ -64,7 +64,7 @@ jobs:
     timeout-minutes: 35
     steps:
       # actions/checkout v5, pinned by immutable commit SHA.
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       # actions/setup-java v5, pinned by immutable commit SHA.
       - uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165
         with:
@@ -94,7 +94,7 @@ jobs:
     timeout-minutes: 45
     steps:
       # actions/checkout v5, pinned by immutable commit SHA.
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       # actions/setup-java v5, pinned by immutable commit SHA.
       - uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165
         with:
