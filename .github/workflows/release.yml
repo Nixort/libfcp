@@ -66,6 +66,8 @@ jobs:
         run: |
           test -n "$CARGO_REGISTRY_TOKEN"
           curl --fail --silent --show-error \
+            --header 'Accept: application/json' \
+            --header 'User-Agent: libfcp-release-validation/1.0 (https://github.com/Nixort/libfcp)' \
             --header "Authorization: $CARGO_REGISTRY_TOKEN" \
             https://crates.io/api/v1/me >/dev/null
       - name: Run release quality gate
