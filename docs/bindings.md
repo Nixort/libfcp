@@ -1,6 +1,6 @@
 # Cross-platform bindings and publication contract
 
-**Status:** `v1.0.0-rc.1` contains **source-level, locally tested FFI façades** for C, C++, Python, Java, Kotlin/JVM, JavaScript/WASM, C# and Go. Reproducible local Maven and npm prerelease packages can now be built for the combined Java 17/Kotlin/JVM API and the Node/browser-bundler WASM façade. GitHub workflows also produce attested Linux `x86_64` native binding bundles. The Node/browser-bundler package **`@nixort/libfcp@1.0.0-rc.1` is published to GitHub Packages**. No remote Maven artifact, wheel, npmjs package, NuGet package, Go module release or platform binary is published; Java, Kotlin, Swift, Python, C#, Go and C/C++ package publication therefore remains unavailable. The Rust surface remains `libfcp-core`, `libfcp`, `libfcp-server` and the optional `libfcp-webrtc` adapter.
+**Status:** `v1.0.0-rc.1` contains **source-level, locally tested FFI façades** for C, C++, Python, Java, Kotlin/JVM, JavaScript/WASM, C# and Go. The JVM path builds a reproducible Maven repository and Central Portal deployment bundle with sources, Javadoc, mandatory digests and optional PGP signatures. CI produces the `linux-x86_64`, `macos-x86_64` and `macos-aarch64` native classifier JARs, aggregates them into one bundle, and runs a clean Linux Maven consumer. The Node/browser-bundler package **`@nixort/libfcp@1.0.0-rc.1` is published to GitHub Packages**. No Maven Central artifact, wheel, npmjs package, NuGet package, Go module release or platform binary has been uploaded; the protected Maven Central workflow requires an explicit human confirmation and release secrets. The Rust surface remains `libfcp-core`, `libfcp`, `libfcp-server` and the optional `libfcp-webrtc` adapter.
 
 ## One protocol implementation, not language ports
 
@@ -26,8 +26,8 @@ The browser is deliberately a separate runtime surface. `libfcp-wasm` is a `wasm
 | C | `crates/libfcp-ffi/include/libfcp_ffi.h` | Compiled C ABI lifecycle/action smoke test; Linux native artifact bundle | Not published |
 | C++20 | `bindings/cpp/include/libfcp.hpp` | Compiled RAII C++ smoke test; Linux native artifact bundle | Not published |
 | Python 3.10+ | `bindings/python` with `ctypes` | CPython native smoke test; source façade is included in Linux native artifact bundle | Not published to PyPI |
-| Java 17+ | `bindings/java` direct JNI bridge and JAR source | JDK JNI compile/load/action smoke test; isolated Maven consumer loads bundled Linux native libraries | Local Maven artifact only; not published remotely |
-| Kotlin/JVM | `bindings/kotlin` thin delegation to Java/JNI façade | Kotlin/JVM action smoke test; compiled into the same local Maven JAR | Local Maven artifact only; not published remotely |
+| Java 17+ | `bindings/java` direct JNI bridge and JAR source | JDK JNI compile/load/CFR-origin smoke test; clean Maven consumer loads bundled Linux native libraries | Central Portal-ready bundle; not uploaded |
+| Kotlin/JVM | `bindings/kotlin` thin delegation to Java/JNI façade | Kotlin/JVM action smoke test; compiled into the same Maven JAR | Central Portal-ready bundle; not uploaded |
 | JavaScript/Node/browser | `crates/libfcp-wasm` and `bindings/js` | `wasm-bindgen` Node smoke test and isolated installed-tarball consumer test | Published as `@nixort/libfcp@1.0.0-rc.1` to GitHub Packages; not published to npmjs |
 | C#/.NET 8 | `bindings/csharp` P/Invoke façade | .NET native smoke test; source façade is included in Linux native artifact bundle | Not published to NuGet |
 | Go 1.22 | `bindings/go` cgo façade | Go cgo native smoke test; source façade is included in Linux native artifact bundle | Not released as a Go module |
@@ -39,12 +39,12 @@ The Java and Kotlin APIs are intentionally separate public façades over the sam
 
 ## ABI and lifecycle contract
 
-The canonical native ABI is versioned by `fcp_ffi_abi_version()` and `fcp_ffi_wire_version()`. Foreign wrappers must reject an incompatible ABI or wire major before creating state. The C header defines exact fixed-width values, opaque handle types, `FcpByteSlice`, `FcpOwnedBuffer`, `FcpAction`, stable status codes and idempotent `*_free` functions.
+The canonical native ABI is versioned by `fcp_ffi_abi_version()` and `fcp_ffi_wire_version()`. ABI major **2** adds a verified FCP `envelope_id` and `remote_endpoint` to every `DELIVER_CFR` action. Foreign wrappers must reject an incompatible ABI or wire major before creating state. The C header defines exact fixed-width values, opaque handle types, `FcpByteSlice`, `FcpOwnedBuffer`, `FcpAction`, stable status codes and idempotent `*_free` functions.
 
 | Contract element | Required rule |
 |---|---|
 | Caller input | Borrowed only for one FFI call; native FCP copies bounded dynamic bytes before state mutation. |
-| Native output | Copied into managed/application memory, then released exactly once with `fcp_buffer_free` or `fcp_action_free`. |
+| Native output | Copied into managed/application memory, then released exactly once with `fcp_buffer_free` or `fcp_action_free`; `DELIVER_CFR` additionally carries the verified FCP sender identity and signed envelope ID. |
 | Handles | Opaque, idempotently releasable and invalid after close. A wrapper must not close a handle concurrently with a native call using it. |
 | Errors | Stable ABI status values for native/C consumers; wrappers map them to typed errors/exceptions without allowing panics or unmanaged exceptions to cross the boundary. |
 | Keys | The current `Signer` generator creates process-local ephemeral key material only. It neither imports nor exports a long-lived private key. |
@@ -70,7 +70,7 @@ A final package release remains a separate controlled operation. Native target a
 
 | Family | Intended prerelease coordinate/artifact | Release host and required gate |
 |---|---|---|
-| Java/Kotlin JVM | `io.github.nixort:libfcp:1.0.0-rc.1` plus native classifiers; current local output is `linux-x86_64` | Isolated Maven consumer loads Java and Kotlin façades through bundled JNI libraries; add macOS/Windows classifiers before declaring those targets |
+| Java/Kotlin JVM | `io.github.nixort:libfcp:1.0.0-rc.1` plus native classifiers | CI builds `linux-x86_64`, `macos-x86_64` and `macos-aarch64`, aggregates a Central Portal-compatible bundle, and runs a clean Linux consumer; Windows and Linux ARM64 remain undeclared until native CI gates exist |
 | Kotlin/Android | `io.github.nixort:libfcp-kotlin-android` AAR | Android `arm64-v8a`/`x86_64` output and instrumented test |
 | Python | `libfcp-python` wheel family | CPython ABI matrix, wheel audit and vector tests |
 | JavaScript | Published GitHub Packages RC: `@nixort/libfcp@1.0.0-rc.1`; current artifact is a Node-compatible WASM tarball | Isolated npm install/consumer gate; add browser runtime/size and browser WebRTC interoperability before any public npmjs release |
@@ -78,7 +78,7 @@ A final package release remains a separate controlled operation. Native target a
 | C# | `Nixort.LibFcp` prerelease | .NET source façade is included in Linux artifact bundle; add NuGet RID native assets and packaging/consumer gates |
 | Go | module release with declared cgo target support | Go source façade is included in Linux artifact bundle; add Go release builds and declared cgo target matrix |
 
-Run `./scripts/test_jvm_maven_package.sh` to build an isolated local repository, verify JAR/POM checksums, resolve it from a clean Maven cache and execute Java plus Kotlin consumer smoke tests. Run `./scripts/test_js_npm_package.sh` to build an npm tarball, verify its checksum, install it into a clean Node consumer and execute the WASM API smoke test. The GitHub `libfcp JVM prerelease`, `libfcp npm prerelease` and `libfcp native bindings prerelease` workflows repeat those gates, upload short-retention artifacts, and attest only trusted `main` builds.
+Run `./scripts/test_jvm_maven_package.sh` to build an isolated local repository, verify all Central digest files and the deployment bundle, resolve it from a clean Maven cache and execute Java plus Kotlin consumer smoke tests. Run `./scripts/package_jvm_native_classifier.sh` only on the matching Linux or macOS host to create one native classifier JAR. Run `./scripts/test_js_npm_package.sh` to build an npm tarball, verify its checksum, install it into a clean Node consumer and execute the WASM API smoke test. The GitHub `libfcp JVM prerelease`, `libfcp npm prerelease` and `libfcp native bindings prerelease` workflows repeat those gates, upload short-retention artifacts, and attest only trusted `main` builds.
 
 `@nixort/libfcp` defaults to the repository-linked GitHub Packages registry, preventing an accidental npmjs upload. The `v1.0.0-rc.1` GitHub Packages RC was published through the separate `libfcp npm GitHub Packages release` workflow after an explicit `workflow_dispatch` confirmation from `main`; its package gates, job-scoped `packages: write` token and provenance attestation completed successfully. The same workflow also supports a matching GitHub prerelease event, but the published RC does not require a Git tag or GitHub Release. A public npmjs release is intentionally not configured: it needs an npm package record and a separately approved OIDC trusted-publisher relationship before it may be added.[8] [9]
 

@@ -14,7 +14,10 @@ readonly PRERELEASE="$ROOT/docs/prereleases/v1.0.0-rc.1.md"
 readonly JVM_POM="$ROOT/bindings/java/pom.xml"
 readonly JVM_PACKAGE="$ROOT/scripts/package_jvm_bindings.sh"
 readonly JVM_GATE="$ROOT/scripts/test_jvm_maven_package.sh"
+readonly JVM_CLASSIFIER="$ROOT/scripts/package_jvm_native_classifier.sh"
 readonly JVM_WORKFLOW="$ROOT/.github/workflows/jvm-prerelease.yml"
+readonly JVM_CENTRAL_WORKFLOW="$ROOT/.github/workflows/maven-central-release.yml"
+readonly JVM_CLASSIFIER_WORKFLOW="$ROOT/.github/workflows/jvm-native-classifiers.yml"
 readonly NPM_MANIFEST="$ROOT/bindings/js/package.json"
 readonly NPM_PACKAGE="$ROOT/scripts/package_js_npm.sh"
 readonly NPM_GATE="$ROOT/scripts/test_js_npm_package.sh"
@@ -39,7 +42,10 @@ require() {
 [[ -f "$JVM_POM" ]] || fail 'missing JVM Maven POM'
 [[ -x "$JVM_PACKAGE" ]] || fail 'missing executable JVM package builder'
 [[ -x "$JVM_GATE" ]] || fail 'missing executable JVM Maven gate'
+[[ -x "$JVM_CLASSIFIER" ]] || fail 'missing executable JVM native classifier builder'
 [[ -f "$JVM_WORKFLOW" ]] || fail 'missing JVM prerelease workflow'
+[[ -f "$JVM_CENTRAL_WORKFLOW" ]] || fail 'missing Maven Central release workflow'
+[[ -f "$JVM_CLASSIFIER_WORKFLOW" ]] || fail 'missing JVM classifier workflow'
 [[ -f "$NPM_MANIFEST" ]] || fail 'missing npm manifest'
 [[ -x "$NPM_PACKAGE" ]] || fail 'missing executable npm package builder'
 [[ -x "$NPM_GATE" ]] || fail 'missing executable npm consumer gate'
@@ -50,7 +56,7 @@ require() {
 [[ ! -e "$ROOT/docs/releases" ]] || fail 'legacy docs/releases directory remains'
 
 require 'The Node/browser-bundler package **`@nixort/libfcp@1.0.0-rc.1` is published to GitHub Packages**' "$BINDINGS"
-require 'No remote Maven artifact, wheel, npmjs package, NuGet package, Go module release or platform binary is published' "$BINDINGS"
+require 'No Maven Central artifact, wheel, npmjs package, NuGet package, Go module release or platform binary has been uploaded' "$BINDINGS"
 require 'Proposed `libfcp-ffi`' "$BINDINGS"
 require 'Kotlin/JVM' "$BINDINGS"
 require 'Kotlin/Android' "$BINDINGS"
@@ -62,14 +68,24 @@ require 'Publication integrity' "$BINDINGS"
 require 'FCP_DATABASE_URL' "$BINDINGS"
 require 'io.github.nixort:libfcp:1.0.0-rc.1' "$BINDINGS"
 require 'linux-x86_64' "$BINDINGS"
+require 'macos-x86_64' "$BINDINGS"
+require 'macos-aarch64' "$BINDINGS"
+require 'ABI major **2**' "$BINDINGS"
 require '<groupId>io.github.nixort</groupId>' "$JVM_POM"
 require '<artifactId>libfcp</artifactId>' "$JVM_POM"
 require '<version>1.0.0-rc.1</version>' "$JVM_POM"
 require 'kotlin-stdlib' "$JVM_POM"
-require 'maven-repository' "$JVM_PACKAGE"
-require 'linux-x86_64' "$JVM_PACKAGE"
-require 'maven-repository' "$JVM_GATE"
-require 'local Maven package and consumer verification passed' "$JVM_GATE"
+require 'central-publishing-maven-plugin' "$JVM_POM"
+require '<distributionManagement>' "$JVM_POM"
+require 'central-staging' "$JVM_PACKAGE"
+require 'LIBFCP_JVM_PREBUILT_CLASSIFIERS_DIR' "$JVM_PACKAGE"
+require 'linux-x86_64' "$JVM_CLASSIFIER"
+require 'macos-aarch64' "$JVM_CLASSIFIER"
+require 'Central bundle and consumer verification passed' "$JVM_GATE"
+require 'PUBLISH-MAVEN-CENTRAL' "$JVM_CENTRAL_WORKFLOW"
+require 'MAVEN_CENTRAL_USERNAME' "$JVM_CENTRAL_WORKFLOW"
+require 'macos-x86_64' "$JVM_CLASSIFIER_WORKFLOW"
+require 'macos-aarch64' "$JVM_CLASSIFIER_WORKFLOW"
 require 'This workflow validates and attaches prerelease artifacts. It never publishes' "$JVM_WORKFLOW"
 require 'actions/attest@' "$JVM_WORKFLOW"
 require '@nixort/libfcp' "$NPM_MANIFEST"
@@ -101,5 +117,5 @@ if [[ -n "$legacy_matches" ]]; then
   fail 'legacy release-candidate path remains'
 fi
 
-bash -n "$JVM_PACKAGE" "$JVM_GATE" "$NPM_PACKAGE" "$NPM_GATE" "$NATIVE_BUNDLE"
+bash -n "$JVM_PACKAGE" "$JVM_GATE" "$JVM_CLASSIFIER" "$NPM_PACKAGE" "$NPM_GATE" "$NATIVE_BUNDLE"
 printf 'cross-platform publication contract passed.\n'

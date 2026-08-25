@@ -14,52 +14,48 @@ repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 version="1.0.0-rc.1"
 group_path="io/github/nixort"
 artifact_id="libfcp"
-classifier="${LIBFCP_JVM_NATIVE_CLASSIFIER:-linux-x86_64}"
 output_root="${LIBFCP_JVM_PACKAGE_DIR:-$repo_root/build/jvm-package}"
 repository="$output_root/maven-repository"
 staging="$output_root/staging"
-native_target="${LIBFCP_JVM_NATIVE_TARGET:-$output_root/cargo-target}"
 central_staging="$output_root/central-staging"
 central_bundle="$output_root/libfcp-$version-central-bundle.zip"
+prebuilt_classifiers="${LIBFCP_JVM_PREBUILT_CLASSIFIERS_DIR:-}"
 
-for command in cargo cc javac jar javadoc kotlinc mvn sha256sum sha512sum sha1sum md5sum zip; do
+for command in javac jar javadoc kotlinc mvn sha256sum sha512sum sha1sum md5sum zip; do
     command -v "$command" >/dev/null 2>&1 || {
         printf 'required command is unavailable: %s\n' "$command" >&2
         exit 1
     }
 done
 
-case "$classifier" in
-    linux-x86_64)
-        jni_library="libfcp_jni.so"
-        ffi_library_name="libfcp_ffi.so"
-        java_include_platform="linux"
-        ;;
-    *)
-        printf 'local JVM native build supports linux-x86_64 only; got classifier: %s\n' "$classifier" >&2
-        printf 'use an externally supplied classifier artifact in the release matrix for other platforms\n' >&2
-        exit 1
-        ;;
-esac
-
 rm -rf "$output_root"
-mkdir -p "$staging/classes" "$staging/kotlin-classes" "$staging/javadoc" \
-    "$staging/native/$classifier/META-INF/native/$classifier"
+mkdir -p "$staging/classes" "$staging/kotlin-classes" "$staging/javadoc" "$staging/native-jars"
 
 cd "$repo_root"
-CARGO_TARGET_DIR="$native_target" cargo build -p libfcp-ffi --release --locked
-ffi_library="$native_target/release/$ffi_library_name"
-test -f "$ffi_library"
-
-java_home="${JAVA_HOME:-$(dirname "$(dirname "$(readlink -f "$(command -v javac)")")")}"
-cc -shared -fPIC -std=c17 -O2 -Wall -Wextra -Werror \
-    -I"$java_home/include" -I"$java_home/include/$java_include_platform" \
-    -I"$repo_root/crates/libfcp-ffi/include" \
-    "$repo_root/bindings/java/src/main/c/fcp_jni.c" \
-    -L"$native_target/release" -lfcp_ffi \
-    -Wl,-rpath,'$ORIGIN' \
-    -o "$staging/native/$classifier/META-INF/native/$classifier/$jni_library"
-cp "$ffi_library" "$staging/native/$classifier/META-INF/native/$classifier/$ffi_library_name"
+if [[ -n "$prebuilt_classifiers" ]]; then
+    [[ -d "$prebuilt_classifiers" ]] || {
+        printf 'LIBFCP_JVM_PREBUILT_CLASSIFIERS_DIR is not a directory: %s\n' "$prebuilt_classifiers" >&2
+        exit 1
+    }
+    shopt -s nullglob
+    native_jars=("$prebuilt_classifiers/$artifact_id-$version-"*.jar)
+    shopt -u nullglob
+    [[ ${#native_jars[@]} -gt 0 ]] || {
+        printf 'no native classifier JARs found in: %s\n' "$prebuilt_classifiers" >&2
+        exit 1
+    }
+    for native_jar in "${native_jars[@]}"; do
+        cp "$native_jar" "$staging/native-jars/"
+    done
+else
+    local_classifier="${LIBFCP_JVM_NATIVE_CLASSIFIER:-linux-x86_64}"
+    local_native_root="$staging/local-native"
+    LIBFCP_JVM_NATIVE_CLASSIFIER="$local_classifier" \
+        LIBFCP_JVM_NATIVE_CLASSIFIER_DIR="$local_native_root" \
+        LIBFCP_JVM_NATIVE_CARGO_TARGET="${LIBFCP_JVM_NATIVE_TARGET:-$output_root/cargo-target}" \
+        "$repo_root/scripts/package_jvm_native_classifier.sh"
+    cp "$local_native_root/$artifact_id-$version-$local_classifier.jar" "$staging/native-jars/"
+fi
 
 find "$repo_root/bindings/java/src/main/java" -name '*.java' -print0 \
     | xargs -0 javac --release 17 -d "$staging/classes"
@@ -74,8 +70,6 @@ jar --create --file "$staging/$artifact_id-$version-sources.jar" \
 javadoc --release 17 -Xdoclint:all,-missing -quiet -d "$staging/javadoc" \
     $(find "$repo_root/bindings/java/src/main/java" -name '*.java' -print)
 jar --create --file "$staging/$artifact_id-$version-javadoc.jar" -C "$staging/javadoc" .
-jar --create --file "$staging/$artifact_id-$version-$classifier.jar" \
-    -C "$staging/native/$classifier" .
 
 mvn -q --batch-mode org.apache.maven.plugins:maven-install-plugin:3.1.4:install-file \
     -Dfile="$staging/$artifact_id-$version.jar" \
@@ -83,11 +77,20 @@ mvn -q --batch-mode org.apache.maven.plugins:maven-install-plugin:3.1.4:install-
     -Dsources="$staging/$artifact_id-$version-sources.jar" \
     -Djavadoc="$staging/$artifact_id-$version-javadoc.jar" \
     -DlocalRepositoryPath="$repository"
-mvn -q --batch-mode org.apache.maven.plugins:maven-install-plugin:3.1.4:install-file \
-    -Dfile="$staging/$artifact_id-$version-$classifier.jar" \
-    -DpomFile="$repo_root/bindings/java/pom.xml" \
-    -Dclassifier="$classifier" \
-    -DlocalRepositoryPath="$repository"
+for native_jar in "$staging/native-jars/$artifact_id-$version-"*.jar; do
+    name="$(basename "$native_jar")"
+    classifier="${name#"$artifact_id-$version-"}"
+    classifier="${classifier%.jar}"
+    [[ -n "$classifier" && "$classifier" != "$name" ]] || {
+        printf 'invalid native classifier JAR name: %s\n' "$name" >&2
+        exit 1
+    }
+    mvn -q --batch-mode org.apache.maven.plugins:maven-install-plugin:3.1.4:install-file \
+        -Dfile="$native_jar" \
+        -DpomFile="$repo_root/bindings/java/pom.xml" \
+        -Dclassifier="$classifier" \
+        -DlocalRepositoryPath="$repository"
+done
 
 artifact_directory="$repository/$group_path/$artifact_id/$version"
 central_directory="$central_staging/$group_path/$artifact_id/$version"
@@ -131,5 +134,5 @@ fi
 printf 'JVM Maven repository: %s\n' "$repository"
 printf 'Central deployment bundle: %s\n' "$central_bundle"
 printf 'Coordinates: io.github.nixort:%s:%s\n' "$artifact_id" "$version"
-printf 'Native classifier built: %s\n' "$classifier"
+printf 'Native classifiers: %s\n' "$(find "$staging/native-jars" -maxdepth 1 -name '*.jar' -printf '%f ' | sed 's/\.jar//g')"
 printf 'PGP signatures: %s\n' "${LIBFCP_JVM_SIGN:-0}"

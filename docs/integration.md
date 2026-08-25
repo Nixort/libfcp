@@ -51,10 +51,13 @@ explicit bindings and established `PeerConnections`. FCP creates one
 `CfrControl` envelope for each requested remote endpoint and preserves
 `Message.payload` byte-for-byte.
 
-On `SessionEvent::DeliverCfr { payload }`, pass `payload` unchanged to
-`Conference::handle`. Route any returned CFR messages through the same bridge.
-FCP is not a CFR roster and must not suppress CFR repair or invent delivery
-acknowledgements. See [`bindings.md`](bindings.md) for the language-binding façade, native-artifact publication and cross-language conformance requirements.
+On `SessionEvent::DeliverCfr { envelope_id, remote_endpoint, payload }`, pass
+`payload` unchanged to `Conference::handle`. `remote_endpoint` is the complete
+verified FCP identity that signed the carrying envelope, and `envelope_id` is
+its stable signed identifier. Persist or apply application policy to that
+transport context before handling CFR; do not infer a sender from an unauthenticated
+WebRTC callback. Route any returned CFR messages through the same bridge. FCP is
+not a CFR roster and must not suppress CFR repair or invent delivery acknowledgements. See [`bindings.md`](bindings.md) for the language-binding façade, native-artifact publication and cross-language conformance requirements.
 
 ## 5. Handle lifecycle events
 

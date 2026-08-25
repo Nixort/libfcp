@@ -1,0 +1,135 @@
+# Copyright Nixort <https://github.com/Nixort> 2026.
+#
+# License: GNU General Public License v3.0 only.
+# You can find the license file in the project root.
+#
+# Federated CFR Connect Protocol (FCP).
+#
+# Builds host-native classifier JARs. It never publishes to Maven Central.
+name: libfcp JVM native classifiers
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/jvm-native-classifiers.yml"
+      - "bindings/java/**"
+      - "bindings/kotlin/**"
+      - "crates/libfcp-ffi/**"
+      - "crates/libfcp/**"
+      - "crates/libfcp-core/**"
+      - "scripts/package_jvm_native_classifier.sh"
+      - "scripts/package_jvm_bindings.sh"
+      - "scripts/test_jvm_maven_package.sh"
+      - "Cargo.toml"
+      - "Cargo.lock"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/jvm-native-classifiers.yml"
+      - "bindings/java/**"
+      - "bindings/kotlin/**"
+      - "crates/libfcp-ffi/**"
+      - "crates/libfcp/**"
+      - "crates/libfcp-core/**"
+      - "scripts/package_jvm_native_classifier.sh"
+      - "scripts/package_jvm_bindings.sh"
+      - "scripts/test_jvm_maven_package.sh"
+      - "Cargo.toml"
+      - "Cargo.lock"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  attestations: write
+  id-token: write
+
+concurrency:
+  group: libfcp-jvm-native-classifiers-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: ${{ matrix.classifier }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            classifier: linux-x86_64
+          - runner: macos-13
+            classifier: macos-x86_64
+          - runner: macos-14
+            classifier: macos-aarch64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 35
+    steps:
+      # actions/checkout v5, pinned by immutable commit SHA.
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      # actions/setup-java v5, pinned by immutable commit SHA.
+      - uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165
+        with:
+          distribution: temurin
+          java-version: "17"
+      # dtolnay/rust-toolchain, pinned by immutable commit SHA.
+      - uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772
+        with:
+          toolchain: "1.98.0"
+      - name: Build host-native classifier JAR
+        env:
+          LIBFCP_JVM_NATIVE_CLASSIFIER: ${{ matrix.classifier }}
+          LIBFCP_JVM_NATIVE_CLASSIFIER_DIR: ${{ github.workspace }}/dist/${{ matrix.classifier }}
+        run: ./scripts/package_jvm_native_classifier.sh
+      # actions/upload-artifact v4.6.2, pinned by immutable commit SHA.
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: libfcp-jvm-native-${{ matrix.classifier }}
+          path: dist/${{ matrix.classifier }}/libfcp-1.0.0-rc.1-${{ matrix.classifier }}.jar
+          if-no-files-found: error
+          retention-days: 14
+
+  aggregate-and-verify:
+    name: Aggregate classifier package and clean consumer
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      # actions/checkout v5, pinned by immutable commit SHA.
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      # actions/setup-java v5, pinned by immutable commit SHA.
+      - uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165
+        with:
+          distribution: temurin
+          java-version: "17"
+      # dtolnay/rust-toolchain, pinned by immutable commit SHA.
+      - uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772
+        with:
+          toolchain: "1.98.0"
+      - name: Install Kotlin compiler
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq kotlin
+      # actions/download-artifact v4.3.0, pinned by immutable commit SHA.
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: libfcp-jvm-native-*
+          path: native-classifiers
+          merge-multiple: true
+      - name: Verify aggregate package and clean consumer
+        env:
+          LIBFCP_JVM_PREBUILT_CLASSIFIERS_DIR: ${{ github.workspace }}/native-classifiers
+        run: ./scripts/test_jvm_maven_package.sh
+      - name: Build distributable aggregate bundle
+        env:
+          LIBFCP_JVM_PACKAGE_DIR: ${{ github.workspace }}/dist/jvm-maven
+          LIBFCP_JVM_PREBUILT_CLASSIFIERS_DIR: ${{ github.workspace }}/native-classifiers
+        run: ./scripts/package_jvm_bindings.sh
+      # actions/upload-artifact v4.6.2, pinned by immutable commit SHA.
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: libfcp-jvm-maven-native-classifiers
+          path: dist/jvm-maven
+          if-no-files-found: error
+          retention-days: 14
+      - name: Attest aggregate Central bundle
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
+        with:
+          subject-path: dist/jvm-maven/libfcp-1.0.0-rc.1-central-bundle.zip
