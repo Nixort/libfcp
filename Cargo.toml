@@ -40,7 +40,7 @@ aes-gcm = { version = "0.10.3", features = ["aes", "zeroize"] }
 argon2 = { version = "0.5.3", features = ["std"] }
 async-trait = "0.1"
 axum = { version = "0.8.6", features = ["json", "macros"] }
-base64 = "0.22"
+base64 = "0.23"
 bytes = "1.10"
 clap = { version = "4.5.53", features = ["derive", "env"] }
 hmac = "0.12.1"
