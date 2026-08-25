@@ -1516,7 +1516,7 @@ dependencies = [
  "argon2",
  "base64 0.22.1",
  "fcp-fabric-domain",
- "hmac 0.12.1",
+ "hmac 0.13.0",
  "rand_core 0.6.4",
  "secrecy",
  "sha2 0.10.9",
