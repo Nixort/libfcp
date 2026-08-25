@@ -10,7 +10,7 @@
 const assert = require('node:assert/strict');
 const fcp = require('@nixort/libfcp');
 
-assert.equal(fcp.abi_version(), 1);
+assert.equal(fcp.abi_version(), 2);
 assert.equal(fcp.wire_version(), 1);
 
 const local = new fcp.Signer();
