@@ -12,6 +12,7 @@ on:
   pull_request:
     paths:
       - ".github/workflows/jvm-native-classifiers.yml"
+      - ".github/workflows/maven-central-release.yml"
       - "bindings/java/**"
       - "bindings/kotlin/**"
       - "crates/libfcp-ffi/**"
@@ -20,12 +21,16 @@ on:
       - "scripts/package_jvm_native_classifier.sh"
       - "scripts/package_jvm_bindings.sh"
       - "scripts/test_jvm_maven_package.sh"
+      - "scripts/release_metadata.sh"
+      - "scripts/test_release_metadata_contract.sh"
+      - "scripts/test_cross_platform_publication_contract.sh"
       - "Cargo.toml"
       - "Cargo.lock"
   push:
     branches: [main]
     paths:
       - ".github/workflows/jvm-native-classifiers.yml"
+      - ".github/workflows/maven-central-release.yml"
       - "bindings/java/**"
       - "bindings/kotlin/**"
       - "crates/libfcp-ffi/**"
@@ -34,6 +39,9 @@ on:
       - "scripts/package_jvm_native_classifier.sh"
       - "scripts/package_jvm_bindings.sh"
       - "scripts/test_jvm_maven_package.sh"
+      - "scripts/release_metadata.sh"
+      - "scripts/test_release_metadata_contract.sh"
+      - "scripts/test_cross_platform_publication_contract.sh"
       - "Cargo.toml"
       - "Cargo.lock"
   workflow_dispatch:
@@ -83,7 +91,7 @@ jobs:
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: libfcp-jvm-native-${{ matrix.classifier }}
-          path: dist/${{ matrix.classifier }}/libfcp-1.0.0-rc.1-${{ matrix.classifier }}.jar
+          path: dist/${{ matrix.classifier }}/libfcp-*-${{ matrix.classifier }}.jar
           if-no-files-found: error
           retention-days: 14
 
@@ -132,4 +140,4 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
         with:
-          subject-path: dist/jvm-maven/libfcp-1.0.0-rc.1-central-bundle.zip
+          subject-path: dist/jvm-maven/libfcp-*-central-bundle.zip
