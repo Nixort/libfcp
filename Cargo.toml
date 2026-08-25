@@ -54,7 +54,7 @@ sha2 = "0.10.9"
 sqlx-core = { version = "=0.8.6", default-features = false, features = ["_rt-tokio", "_tls-rustls-ring-webpki", "migrate", "time", "uuid"] }
 sqlx-postgres = { version = "=0.8.6", default-features = false, features = ["migrate", "time", "uuid"] }
 subtle = "2.6"
-time = { version = "=0.3.47", features = ["formatting", "macros", "parsing", "serde-well-known"] }
+time = { version = "=0.3.55", features = ["formatting", "macros", "parsing", "serde-well-known"] }
 tokio = { version = "1.48", features = ["macros", "rt-multi-thread", "sync", "time", "net", "signal"] }
 tower = "0.5"
 tower-http = { version = "0.6", features = ["catch-panic", "limit", "request-id", "sensitive-headers", "trace"] }
