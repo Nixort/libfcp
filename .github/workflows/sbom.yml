@@ -31,7 +31,7 @@ jobs:
       # actions/checkout v5, pinned by immutable commit SHA.
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
       # anchore/sbom-action v0.24.0, pinned by immutable commit SHA.
-      - uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610
+      - uses: anchore/sbom-action@3ad7283483fc7af8ff2b4ea19663c2d5ca935e26
         with:
           path: .
           format: spdx-json
@@ -53,7 +53,7 @@ jobs:
         with:
           ref: ${{ github.event.release.tag_name }}
       # anchore/sbom-action v0.24.0, pinned by immutable commit SHA.
-      - uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610
+      - uses: anchore/sbom-action@3ad7283483fc7af8ff2b4ea19663c2d5ca935e26
         with:
           path: .
           format: spdx-json
