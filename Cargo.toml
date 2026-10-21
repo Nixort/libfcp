@@ -36,7 +36,7 @@ cfr_protocol = { version = "=1.0.0-rc.1", default-features = false }
 ed25519-dalek = { version = "3.0", default-features = false, features = ["alloc", "fast", "zeroize"] }
 ml-dsa = { version = "0.1.1", default-features = false, features = ["alloc"] }
 thiserror = { version = "2.0", default-features = false }
-aes-gcm = { version = "0.10.3", features = ["aes", "zeroize"] }
+aes-gcm = { version = "0.11.1", features = ["aes", "zeroize"] }
 argon2 = { version = "0.5.3", features = ["std"] }
 async-trait = "0.1"
 axum = { version = "0.8.6", features = ["json", "macros"] }
